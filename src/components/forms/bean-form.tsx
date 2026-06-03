@@ -47,7 +47,7 @@ export function BeanForm() {
     const parsed = beanSchema.safeParse({
       ...formData,
       roastDate: formData.roastDate,
-      openDate: formData.openDate || undefined
+      openDate: formData.openDate
     });
 
     if (!parsed.success) {

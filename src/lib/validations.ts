@@ -1,17 +1,18 @@
 import { z } from "zod";
 
+const optionalDate = z.preprocess(
+  (val) => (val === "" || val === null ? undefined : val),
+  z.coerce.date().optional()
+);
+
 export const beanSchema = z.object({
   roaster: z.string().min(1, "Kavurucu zorunlu"),
   name: z.string().min(1, "Çekirdek adı zorunlu"),
   origin: z.string().min(1, "Menşei zorunlu"),
   variety: z.string().optional(),
   process: z.string().min(1, "İşlem zorunlu"),
-  roastDate: z.string().or(z.date()).transform((val) => new Date(val)),
-  openDate: z
-    .string()
-    .or(z.date())
-    .optional()
-    .transform((val) => (val ? new Date(val) : undefined)),
+  roastDate: z.coerce.date(),
+  openDate: optionalDate,
   isFinished: z.boolean().default(false)
 });
 

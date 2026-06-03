@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     const parsed = beanSchema.safeParse({
       ...body,
       roastDate: body.roastDate,
-      openDate: body.openDate || undefined
+      openDate: body.openDate
     });
 
     if (!parsed.success) {
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       data: {
         ...parsed.data,
         roastDate: parsed.data.roastDate,
-        openDate: parsed.data.openDate || null
+        openDate: parsed.data.openDate ?? null
       }
     });
 
