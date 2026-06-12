@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { brewLogSchema } from "@/lib/validations";
 import { formatRatio } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ const initialState: BrewFormState = {
 };
 
 export function BrewForm({ beans }: BrewFormProps) {
+  const router = useRouter();
   const [formData, setFormData] = useState<BrewFormState>(initialState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
@@ -105,7 +107,7 @@ export function BrewForm({ beans }: BrewFormProps) {
 
       setFormData(initialState);
       setStatus("success");
-      window.location.href = "/brews";
+      router.push("/brews");
     } catch (error) {
       setStatus("error");
     }

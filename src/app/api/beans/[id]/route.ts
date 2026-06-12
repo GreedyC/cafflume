@@ -16,6 +16,7 @@ export async function PATCH(request: Request, { params }: Params) {
     });
     return NextResponse.json(updated);
   } catch (error) {
+    console.error(error);
     return NextResponse.json(
       { error: "Server error" },
       { status: 500 }
@@ -28,6 +29,7 @@ export async function DELETE(_request: Request, { params }: Params) {
     await prisma.bean.delete({ where: { id: params.id } });
     return NextResponse.json({ ok: true });
   } catch (error) {
+    console.error(error);
     return NextResponse.json(
       { error: "Server error" },
       { status: 500 }

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { DeleteConfirmDialog } from "@/components/beans/delete-confirm-dialog";
 import {
   Table,
   TableCell,
@@ -45,6 +46,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<BeanData | null>(null);
 
   const counts = useMemo(() => {
     const active = beans.filter((bean) => !bean.isFinished).length;
@@ -101,11 +103,8 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
   };
 
   const handleDelete = async (beanId: string) => {
-    const confirmDelete = window.confirm(
-      "Bu çekirdek kaydını silmek istediğine emin misin?"
-    );
-    if (!confirmDelete) return;
     setBusyId(beanId);
+    setDeleteTarget(null);
     try {
       const response = await fetch(`/api/beans/${beanId}`, {
         method: "DELETE"
@@ -229,7 +228,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                     variant="ghost"
                     className="px-3 py-2 text-xs text-red-700"
                     disabled={busyId === bean.id}
-                    onClick={() => handleDelete(bean.id)}
+                    onClick={() => setDeleteTarget(bean)}
                   >
                     Sil
                   </Button>
@@ -296,7 +295,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                           variant="ghost"
                           className="px-3 py-2 text-xs text-red-700"
                           disabled={busyId === bean.id}
-                          onClick={() => handleDelete(bean.id)}
+                          onClick={() => setDeleteTarget(bean)}
                         >
                           Sil
                         </Button>
@@ -309,6 +308,14 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
           </div>
         </>
       )}
+
+      <DeleteConfirmDialog
+        open={deleteTarget !== null}
+        beanName={deleteTarget ? `${deleteTarget.roaster} · ${deleteTarget.name}` : ""}
+        busy={busyId !== null}
+        onConfirm={() => deleteTarget && handleDelete(deleteTarget.id)}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

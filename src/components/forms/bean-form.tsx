@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { beanSchema } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ const initialState: BeanFormState = {
 };
 
 export function BeanForm() {
+  const router = useRouter();
   const [formData, setFormData] = useState<BeanFormState>(initialState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
@@ -82,7 +84,7 @@ export function BeanForm() {
 
       setFormData(initialState);
       setStatus("success");
-      window.location.href = "/beans";
+      router.push("/beans");
     } catch (error) {
       setStatus("error");
     }

@@ -162,6 +162,7 @@ export default async function DashboardPage() {
               alt="Brew"
               width={800}
               height={320}
+              sizes="(max-width: 1024px) 100vw, 33vw"
               className="h-full w-full object-cover"
             />
           </div>
@@ -172,6 +173,7 @@ export default async function DashboardPage() {
                 alt="Beans"
                 width={600}
                 height={260}
+                sizes="(max-width: 1024px) 50vw, 16vw"
                 className="h-full w-full object-cover"
               />
             </div>
@@ -181,6 +183,7 @@ export default async function DashboardPage() {
                 alt="Pour over"
                 width={600}
                 height={260}
+                sizes="(max-width: 1024px) 50vw, 16vw"
                 className="h-full w-full object-cover"
               />
             </div>

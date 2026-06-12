@@ -2,12 +2,29 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { brewLogSchema } from "@/lib/validations";
 
-export async function GET() {
-  const brews = await prisma.brewLog.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { bean: true }
+const PAGE_SIZE = 10;
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
+  const skip = (page - 1) * PAGE_SIZE;
+
+  const [brews, total] = await Promise.all([
+    prisma.brewLog.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { bean: true },
+      skip,
+      take: PAGE_SIZE
+    }),
+    prisma.brewLog.count()
+  ]);
+
+  return NextResponse.json({
+    brews,
+    total,
+    page,
+    totalPages: Math.ceil(total / PAGE_SIZE)
   });
-  return NextResponse.json(brews);
 }
 
 export async function POST(request: Request) {
@@ -36,6 +53,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(brew, { status: 201 });
   } catch (error) {
+    console.error(error);
     return NextResponse.json(
       { error: "Server error" },
       { status: 500 }
