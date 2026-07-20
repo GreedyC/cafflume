@@ -1,62 +1,100 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { brewLogSchema } from "@/lib/validations";
+import { brewLogSchema, pageSchema } from "@/lib/validations";
+import {
+  rejectUntrustedOrigin,
+  requireAuthentication
+} from "@/lib/auth";
+import {
+  ApiRequestError,
+  apiErrorResponse,
+  readJsonBody
+} from "@/lib/api-security";
 
 const PAGE_SIZE = 10;
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const page = Math.max(1, Number(searchParams.get("page")) || 1);
-  const skip = (page - 1) * PAGE_SIZE;
+  const authError = await requireAuthentication(request);
+  if (authError) {
+    return authError;
+  }
 
-  const [brews, total] = await Promise.all([
-    prisma.brewLog.findMany({
-      orderBy: { createdAt: "desc" },
-      include: { bean: true },
-      skip,
-      take: PAGE_SIZE
-    }),
-    prisma.brewLog.count()
-  ]);
+  try {
+    const { searchParams } = new URL(request.url);
+    const parsedPage = pageSchema.safeParse(searchParams.get("page") ?? 1);
+    if (!parsedPage.success) {
+      throw new ApiRequestError(400, "Geçersiz sayfa numarası.");
+    }
+    const page = parsedPage.data;
+    const skip = (page - 1) * PAGE_SIZE;
 
-  return NextResponse.json({
-    brews,
-    total,
-    page,
-    totalPages: Math.ceil(total / PAGE_SIZE)
-  });
+    const [brews, total] = await Promise.all([
+      prisma.brewLog.findMany({
+        orderBy: { createdAt: "desc" },
+        include: { bean: true },
+        skip,
+        take: PAGE_SIZE
+      }),
+      prisma.brewLog.count()
+    ]);
+
+    const response = NextResponse.json({
+      brews,
+      total,
+      page,
+      totalPages: Math.ceil(total / PAGE_SIZE)
+    });
+    response.headers.set("Cache-Control", "private, no-store");
+    return response;
+  } catch (error) {
+    return apiErrorResponse(error, "brews.list");
+  }
 }
 
 export async function POST(request: Request) {
+  const authError = await requireAuthentication(request);
+  if (authError) {
+    return authError;
+  }
+  const originError = rejectUntrustedOrigin(request);
+  if (originError) {
+    return originError;
+  }
+
   try {
-    const body = await request.json();
-    const parsed = brewLogSchema.safeParse({
-      ...body,
-      doseGrams: Number(body.doseGrams),
-      yieldMl: Number(body.yieldMl),
-      waterTempC: Number(body.waterTempC),
-      brewTimeMin: Number(body.brewTimeMin),
-      brewTimeSec: Number(body.brewTimeSec),
-      rating: Number(body.rating)
-    });
+    const body = await readJsonBody(request);
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      throw new ApiRequestError(400, "İstek gövdesi bir nesne olmalı.");
+    }
+    const parsed = brewLogSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validation error", details: parsed.error.flatten() },
-        { status: 400 }
+      throw new ApiRequestError(
+        400,
+        "Doğrulama hatası.",
+        parsed.error.flatten()
       );
     }
 
-    const brew = await prisma.brewLog.create({
-      data: parsed.data
+    const brew = await prisma.$transaction(async (transaction) => {
+      const bean = await transaction.bean.findFirst({
+        where: { id: parsed.data.beanId, isFinished: false },
+        select: { id: true }
+      });
+      if (!bean) {
+        throw new ApiRequestError(
+          409,
+          "Seçilen çekirdek bulunamadı veya artık aktif değil."
+        );
+      }
+
+      return transaction.brewLog.create({
+        data: parsed.data
+      });
     });
 
     return NextResponse.json(brew, { status: 201 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: "Server error" },
-      { status: 500 }
-    );
+    return apiErrorResponse(error, "brews.create");
   }
 }
