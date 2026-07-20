@@ -1,27 +1,45 @@
+import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: "primary" | "secondary" | "ghost" | "danger";
+  size?: "sm" | "md";
 };
 
-export function Button({
-  className,
+export const buttonStyles = ({
   variant = "primary",
-  ...props
-}: ButtonProps) {
-  return (
-    <button
-      className={cn(
-        "inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-[var(--ring)]",
-        variant === "primary" &&
-          "bg-[var(--accent)] text-[var(--brown)] shadow-soft hover:bg-[var(--accent-2)]",
-        variant === "secondary" &&
-          "bg-[var(--surface-2)] text-[var(--ink)] hover:bg-[rgba(242,221,174,0.8)]",
-        variant === "ghost" &&
-          "bg-transparent text-[var(--ink)] hover:bg-[rgba(209,161,42,0.16)]",
-        className
-      )}
-      {...props}
-    />
+  size = "md",
+  className
+}: {
+  variant?: ButtonProps["variant"];
+  size?: ButtonProps["size"];
+  className?: string;
+} = {}) =>
+  cn(
+    "inline-flex items-center justify-center gap-2 rounded-xl font-bold outline-none transition disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2",
+    size === "md" ? "min-h-11 px-4 py-2.5 text-sm" : "min-h-10 px-3 py-2 text-xs",
+    variant === "primary" &&
+      "bg-[var(--accent)] text-white shadow-[var(--shadow-sm)] hover:bg-[var(--accent-strong)]",
+    variant === "secondary" &&
+      "border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]",
+    variant === "ghost" &&
+      "bg-transparent text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]",
+    variant === "danger" &&
+      "bg-[var(--danger)] text-white hover:bg-[#7d2828]",
+    className
   );
-}
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  function Button(
+    { className, variant = "primary", size = "md", ...props },
+    ref
+  ) {
+    return (
+      <button
+        ref={ref}
+        className={buttonStyles({ variant, size, className })}
+        {...props}
+      />
+    );
+  }
+);

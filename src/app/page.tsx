@@ -1,240 +1,391 @@
 import Link from "next/link";
-import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatDateTime, formatDurationParts, formatNumber } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import { buttonStyles } from "@/components/ui/button";
+import {
+  formatDate,
+  formatDateTime,
+  formatDaysSince,
+  formatDurationParts,
+  formatNumber
+} from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
+function getFreshness(days: number) {
+  if (days < 5) return { label: "Dinleniyor", tone: "warning" as const };
+  if (days <= 30) return { label: "İdeal aralık", tone: "success" as const };
+  return { label: "Öncelikli tüket", tone: "danger" as const };
+}
+
 export default async function DashboardPage() {
   const now = new Date();
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
   const weekAgo = new Date(now);
-  weekAgo.setDate(now.getDate() - 7);
+  weekAgo.setHours(0, 0, 0, 0);
+  weekAgo.setDate(now.getDate() - 6);
 
-  const [activeBeansCount, totalBrewsCount, topBrews] = await Promise.all([
-    prisma.bean.count({ where: { isFinished: false } }),
+  const [activeBeans, totalBrews, weekBrews, recentBrews] = await Promise.all([
+    prisma.bean.findMany({
+      where: { isFinished: false },
+      orderBy: { roastDate: "asc" },
+      include: {
+        brewLogs: {
+          orderBy: [{ rating: "desc" }, { createdAt: "desc" }],
+          take: 1
+        }
+      }
+    }),
     prisma.brewLog.count(),
     prisma.brewLog.findMany({
-      orderBy: [{ rating: "desc" }, { createdAt: "desc" }],
+      where: { createdAt: { gte: weekAgo } },
+      orderBy: { createdAt: "asc" },
+      include: { bean: true }
+    }),
+    prisma.brewLog.findMany({
+      orderBy: { createdAt: "desc" },
       include: { bean: true },
       take: 3
     })
   ]);
 
-  const dailyBrews = await prisma.brewLog.findMany({
-    where: { createdAt: { gte: startOfDay } },
-    select: { method: true, doseGrams: true, yieldMl: true }
-  });
-
-  const rangeBrews = dailyBrews.length
-    ? dailyBrews
-    : await prisma.brewLog.findMany({
-        where: { createdAt: { gte: weekAgo } },
-        select: { method: true, doseGrams: true, yieldMl: true }
-      });
-
-  const noteWindowLabel = dailyBrews.length ? "Bugün" : "Son 7 gün";
-  const noteMessage = rangeBrews.length
-    ? `${noteWindowLabel} içinde ${rangeBrews.length} demleme kaydı.`
-    : "Henüz demleme kaydı yok.";
-
-  const methodCounts = rangeBrews.reduce<Record<string, number>>(
-    (acc, brew) => {
-      acc[brew.method] = (acc[brew.method] ?? 0) + 1;
-      return acc;
-    },
-    {}
-  );
+  const nextBean = activeBeans[0];
+  const nextRecipe = nextBean?.brewLogs[0];
+  const roastAge = nextBean
+    ? Math.max(
+        0,
+        Math.floor(
+          (now.getTime() - nextBean.roastDate.getTime()) / (1000 * 60 * 60 * 24)
+        )
+      )
+    : 0;
+  const freshness = getFreshness(roastAge);
+  const averageRating = weekBrews.length
+    ? weekBrews.reduce((sum, brew) => sum + brew.rating, 0) / weekBrews.length
+    : null;
+  const methodCounts = weekBrews.reduce<Record<string, number>>((acc, brew) => {
+    acc[brew.method] = (acc[brew.method] ?? 0) + 1;
+    return acc;
+  }, {});
   const favoriteMethod = Object.entries(methodCounts).sort(
     (a, b) => b[1] - a[1]
   )[0]?.[0];
-  const averageRatio = rangeBrews.length
-    ? rangeBrews.reduce((sum, brew) => sum + brew.yieldMl / brew.doseGrams, 0) /
-      rangeBrews.length
-    : null;
-  const ratioLabel = averageRatio
-    ? `1:${formatNumber(averageRatio, 1)}`
-    : "—";
+
+  const dailyActivity = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(weekAgo);
+    date.setDate(weekAgo.getDate() + index);
+    const count = weekBrews.filter(
+      (brew) => brew.createdAt.toDateString() === date.toDateString()
+    ).length;
+    return {
+      label: new Intl.DateTimeFormat("tr-TR", { weekday: "short" }).format(date),
+      count
+    };
+  });
+  const maxActivity = Math.max(1, ...dailyActivity.map((day) => day.count));
 
   return (
-    <div className="flex flex-col gap-10">
-      <section className="grid gap-5 lg:grid-cols-3">
-        <div className="relative overflow-hidden rounded-[32px] border border-[rgba(75,45,23,0.14)] bg-[rgba(255,249,235,0.9)] p-6 shadow-soft">
-          <div className="absolute right-0 top-0 h-28 w-28 -translate-y-6 translate-x-10 rounded-full bg-[rgba(209,161,42,0.28)] blur-2xl" />
-          <div className="flex flex-col gap-5">
-            <div>
-              <p className="text-sm text-[var(--ink-muted)]">Aktif paketler</p>
-              <p className="text-3xl font-semibold text-[var(--accent-2)]">
-                {activeBeansCount}
-              </p>
-            </div>
-            <p className="text-sm text-[var(--ink-muted)]">
-              Bugün demlemeye hazır çekirdekler.
-            </p>
-            <div className="flex flex-wrap gap-3 text-xs text-[var(--ink-muted)]">
-              <span className="rounded-full bg-[rgba(209,161,42,0.18)] px-3 py-1">
-                Stok takibi
-              </span>
-              <span className="rounded-full bg-[rgba(171,117,52,0.18)] px-3 py-1">
-                Tazelik
-              </span>
-            </div>
-          </div>
+    <div className="flex flex-col gap-8 sm:gap-10">
+      <header className="journal-rule flex flex-col gap-4 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
+            Günlük kayıt · {formatDate(now)}
+          </p>
+          <h1 className="display-title mt-2 text-4xl font-semibold sm:text-5xl">
+            Fincanın bugün ne anlatıyor?
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--ink-muted)] sm:text-base">
+            Taze paketleri izle, iyi tariflere geri dön ve her demlemede küçük
+            bir ilerleme kaydet.
+          </p>
         </div>
-        <div className="relative overflow-hidden rounded-[32px] border border-[rgba(75,45,23,0.14)] bg-[rgba(255,249,235,0.9)] p-6 shadow-soft">
-          <div className="absolute left-0 top-0 h-24 w-24 -translate-x-6 -translate-y-8 rounded-full bg-[rgba(176,120,31,0.28)] blur-2xl" />
-          <div className="flex flex-col gap-5">
-            <div>
-              <p className="text-sm text-[var(--ink-muted)]">Toplam demleme</p>
-              <p className="text-3xl font-semibold text-[var(--accent-2)]">
-                {totalBrewsCount}
+        <Link href="/brews/new" className={buttonStyles()}>
+          Yeni demleme kaydet
+        </Link>
+      </header>
+
+      <section
+        aria-label="Bugünün önerisi ve özet metrikler"
+        className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]"
+      >
+        <Card
+          tone="dark"
+          className="relative min-h-[330px] overflow-hidden p-6 sm:p-8"
+        >
+          <div
+            aria-hidden="true"
+            className="absolute -right-24 -top-24 h-72 w-72 rounded-full border border-white/10"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute -right-8 top-8 h-48 w-48 rounded-full border border-white/10"
+          />
+          <div className="relative flex h-full flex-col">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent-soft)]">
+                Sıradaki fincan
+              </span>
+              {nextBean && (
+                <Badge tone={freshness.tone}>{freshness.label}</Badge>
+              )}
+            </div>
+
+            {nextBean ? (
+              <>
+                <div className="mt-10">
+                  <p className="text-sm text-white/75">{nextBean.roaster}</p>
+                  <h2 className="display-title mt-1 max-w-2xl text-4xl font-semibold sm:text-5xl">
+                    {nextBean.name}
+                  </h2>
+                  <p className="mt-3 text-sm text-white/75">
+                    {nextBean.origin} · {nextBean.process}
+                    {nextBean.variety ? ` · ${nextBean.variety}` : ""}
+                  </p>
+                </div>
+                <div className="mt-auto grid gap-3 pt-10 sm:grid-cols-[auto_auto_1fr] sm:items-end">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-white/70">
+                      Kavrum yaşı
+                    </p>
+                    <p className="mt-1 text-xl font-semibold tabular-nums">
+                      {formatDaysSince(nextBean.roastDate)}
+                    </p>
+                  </div>
+                  {nextRecipe && (
+                    <div className="sm:border-l sm:border-white/15 sm:pl-6">
+                      <p className="text-[10px] uppercase tracking-wider text-white/70">
+                        En iyi kayıt
+                      </p>
+                      <p className="mt-1 text-xl font-semibold tabular-nums">
+                        {formatNumber(nextRecipe.rating, 1)}/10
+                      </p>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2 sm:justify-end">
+                    <Link
+                      href={`/beans/${nextBean.id}`}
+                      className={buttonStyles({
+                        variant: "ghost",
+                        className: "text-white hover:bg-white/10 hover:text-white"
+                      })}
+                    >
+                      Paketi aç
+                    </Link>
+                    <Link
+                      href={
+                        nextRecipe
+                          ? `/brews/new?from=${nextRecipe.id}`
+                          : `/brews/new?bean=${nextBean.id}`
+                      }
+                      className={buttonStyles({
+                        className:
+                          "bg-white text-[var(--ink)] hover:bg-[var(--accent-soft)]"
+                      })}
+                    >
+                      {nextRecipe ? "Tarifi tekrar demle" : "İlk tarifi oluştur"}
+                    </Link>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="my-auto max-w-lg py-10">
+                <h2 className="display-title text-4xl font-semibold">
+                  Günlüğün ilk sayfası hazır.
+                </h2>
+                <p className="mt-4 leading-7 text-white/75">
+                  Önce bir çekirdek paketi ekle; ardından her fincanı aynı paket
+                  üzerinde karşılaştır.
+                </p>
+                <Link
+                  href="/beans/new"
+                  className={buttonStyles({
+                    className:
+                      "mt-6 bg-white text-[var(--ink)] hover:bg-[var(--accent-soft)]"
+                  })}
+                >
+                  İlk çekirdeği ekle
+                </Link>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-1">
+          <Card className="flex flex-col justify-between gap-5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+              Aktif paket
+            </p>
+            <div className="flex items-end justify-between gap-3">
+              <p className="display-title text-4xl font-semibold tabular-nums">
+                {activeBeans.length}
               </p>
+              <Link
+                href="/beans"
+                className="text-xs font-bold text-[var(--accent)] underline-offset-4 hover:underline"
+              >
+                Envanter
+              </Link>
             </div>
-            <p className="text-sm text-[var(--ink-muted)]">
-              Şimdiye kadar kaydedilen demlemeler.
+          </Card>
+          <Card className="flex flex-col justify-between gap-5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+              Son 7 gün
             </p>
-            <div className="flex flex-wrap gap-3 text-xs text-[var(--ink-muted)]">
-              <span className="rounded-full bg-[rgba(209,161,42,0.18)] px-3 py-1">
-                Brew Log
-              </span>
-              <span className="rounded-full bg-[rgba(171,117,52,0.18)] px-3 py-1">
-                Analiz
-              </span>
+            <div className="flex items-end justify-between gap-3">
+              <p className="display-title text-4xl font-semibold tabular-nums">
+                {weekBrews.length}
+              </p>
+              <span className="text-xs text-[var(--ink-muted)]">demleme</span>
             </div>
-          </div>
-        </div>
-        <div className="relative overflow-hidden rounded-[32px] border border-[rgba(75,45,23,0.14)] bg-[rgba(255,249,235,0.9)] p-6 shadow-soft">
-          <div className="absolute bottom-0 right-0 h-24 w-24 translate-x-6 translate-y-6 rounded-full bg-[rgba(209,161,42,0.28)] blur-2xl" />
-          <div className="flex flex-col gap-5">
-            <div>
-              <p className="text-sm text-[var(--ink-muted)]">Hızlı aksiyon</p>
-              <p className="text-lg font-semibold">Yeni demleme ekle</p>
-            </div>
-            <p className="text-sm text-[var(--ink-muted)]">
-              Oran, öğütüm ve notları tek ekran üzerinden kaydet.
+          </Card>
+          <Card className="col-span-2 flex flex-col justify-between gap-5 xl:col-span-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+              Haftalık ortalama
             </p>
-            <Link
-              href="/brews/new"
-              className="inline-flex w-fit items-center gap-2 rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-[var(--brown)] shadow-soft hover:bg-[var(--accent-2)]"
-            >
-              Demleme kaydet
-            </Link>
-          </div>
+            <div className="flex items-end justify-between gap-3">
+              <p className="display-title text-4xl font-semibold tabular-nums">
+                {averageRating ? formatNumber(averageRating, 1) : "—"}
+              </p>
+              <span className="text-xs text-[var(--ink-muted)]">/ 10 puan</span>
+            </div>
+          </Card>
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-        <div className="relative overflow-hidden rounded-[32px] border border-[rgba(75,45,23,0.16)] bg-[rgba(255,249,235,0.92)] p-6 shadow-soft">
-          <div className="absolute inset-0 opacity-40">
-            <div className="absolute left-0 top-0 h-40 w-40 -translate-x-16 -translate-y-16 rounded-full bg-[rgba(209,161,42,0.3)] blur-3xl" />
-            <div className="absolute bottom-0 right-0 h-52 w-52 translate-x-10 translate-y-10 rounded-full bg-[rgba(176,120,31,0.28)] blur-3xl" />
-          </div>
-          <div className="relative flex flex-col gap-4">
-            <h2 className="text-2xl font-semibold">Günün Demleme Notları</h2>
-            <p className="text-sm text-[var(--ink-muted)]">
-              {noteMessage}
+      <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <Card>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--accent)]">
+                7 günlük ritim
+              </p>
+              <h2 className="display-title mt-2 text-2xl font-semibold">
+                Demleme aktivitesi
+              </h2>
+            </div>
+            <p className="text-right text-xs text-[var(--ink-muted)]">
+              Toplam {totalBrews} kayıt
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-[rgba(75,45,23,0.12)] bg-[rgba(255,255,255,0.7)] p-4">
-                <p className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">
-                  Favori yöntem
-                </p>
-                <p className="text-lg font-semibold">
-                  {favoriteMethod ?? "—"}
-                </p>
+          </div>
+          <div
+            className="mt-8 grid h-36 grid-cols-7 items-end gap-2"
+            role="img"
+            aria-label={`Son yedi günde ${weekBrews.length} demleme`}
+          >
+            {dailyActivity.map((day) => (
+              <div
+                key={day.label}
+                className="flex h-full flex-col items-center justify-end gap-2"
+              >
+                <span className="text-[10px] font-bold tabular-nums text-[var(--ink-muted)]">
+                  {day.count || ""}
+                </span>
+                <span
+                  className="w-full min-w-3 rounded-t-md bg-[var(--accent)] transition-[height]"
+                  style={{
+                    height: `${Math.max(8, (day.count / maxActivity) * 100)}%`,
+                    opacity: day.count ? 1 : 0.18
+                  }}
+                />
+                <span className="text-[10px] uppercase text-[var(--ink-soft)]">
+                  {day.label.replace(".", "")}
+                </span>
               </div>
-              <div className="rounded-2xl border border-[rgba(75,45,23,0.12)] bg-[rgba(255,255,255,0.7)] p-4">
-                <p className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">
-                  Ortalama oran
-                </p>
-                <p className="text-lg font-semibold">{ratioLabel}</p>
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
-        <div className="grid gap-4">
-          <div className="h-40 overflow-hidden rounded-[28px] border border-[rgba(75,45,23,0.16)] shadow-soft">
-            <Image
-              src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80"
-              alt="Brew"
-              width={800}
-              height={320}
-              sizes="(max-width: 1024px) 100vw, 33vw"
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="h-32 overflow-hidden rounded-[24px] border border-[rgba(75,45,23,0.16)] shadow-soft">
-              <Image
-                src="https://images.unsplash.com/photo-1459755486867-b55449bb39ff?auto=format&fit=crop&w=600&q=80"
-                alt="Beans"
-                width={600}
-                height={260}
-                sizes="(max-width: 1024px) 50vw, 16vw"
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div className="h-32 overflow-hidden rounded-[24px] border border-[rgba(75,45,23,0.16)] shadow-soft">
-              <Image
-                src="https://images.unsplash.com/photo-1507133750040-4a8f57021571?auto=format&fit=crop&w=600&q=80"
-                alt="Pour over"
-                width={600}
-                height={260}
-                sizes="(max-width: 1024px) 50vw, 16vw"
-                className="h-full w-full object-cover"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
+        </Card>
 
-      <section className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">En yüksek puanlı son demlemeler</h2>
+        <Card tone="muted">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--accent)]">
+            Haftanın izi
+          </p>
+          <h2 className="display-title mt-2 text-2xl font-semibold">
+            {weekBrews.length
+              ? `${favoriteMethod ?? "Kayıtlı yöntem"} öne çıkıyor`
+              : "İlk veriyi sen ekle"}
+          </h2>
+          <p className="mt-4 text-sm leading-6 text-[var(--ink-muted)]">
+            {weekBrews.length
+              ? `${weekBrews.length} kayıtta ortalama ${formatNumber(
+                  averageRating ?? 0,
+                  1
+                )}/10. Bir sonraki fincanda tek değişkeni değiştirerek notunu karşılaştır.`
+              : "Bu hafta henüz kayıt yok. Küçük bir tarif değişikliği yap ve sonucu günlüğüne ekle."}
+          </p>
           <Link
             href="/brews"
-            className="text-sm font-semibold text-[var(--accent-2)]"
+            className="mt-6 inline-flex text-sm font-bold text-[var(--accent-strong)] underline decoration-[var(--accent)] underline-offset-4"
+          >
+            Tüm kayıtları incele
+          </Link>
+        </Card>
+      </section>
+
+      <section>
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--accent)]">
+              Günlükten son sayfalar
+            </p>
+            <h2 className="display-title mt-2 text-3xl font-semibold">
+              Son demlemeler
+            </h2>
+          </div>
+          <Link
+            href="/brews"
+            className="text-sm font-bold text-[var(--accent-strong)] underline-offset-4 hover:underline"
           >
             Tümünü gör
           </Link>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          {topBrews.length === 0 ? (
-            <Card>
-              <p className="text-sm text-[var(--ink-muted)]">
-                Henüz kayıtlı demleme yok.
-              </p>
-            </Card>
-          ) : (
-            topBrews.map((brew) => (
-              <Card key={brew.id} className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <Badge tone="success">{formatNumber(brew.rating, 1)}/10</Badge>
-                  <span className="text-xs text-[var(--ink-muted)]">
+        {recentBrews.length ? (
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            {recentBrews.map((brew) => (
+              <Card key={brew.id} className="flex min-h-64 flex-col">
+                <div className="flex items-center justify-between gap-3">
+                  <Badge tone={brew.rating >= 8 ? "success" : "default"}>
+                    {formatNumber(brew.rating, 1)}/10
+                  </Badge>
+                  <time className="text-[11px] text-[var(--ink-muted)]">
                     {formatDateTime(brew.createdAt)}
-                  </span>
+                  </time>
                 </div>
-                <div>
-                  <p className="text-lg font-semibold">
-                    {brew.bean.roaster} · {brew.bean.name}
+                <Link
+                  href={`/brews/${brew.id}`}
+                  className="mt-6 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                >
+                  <p className="text-xs font-semibold text-[var(--ink-muted)]">
+                    {brew.bean.roaster}
                   </p>
-                  <p className="text-sm text-[var(--ink-muted)]">{brew.method}</p>
+                  <h3 className="display-title mt-1 text-2xl font-semibold">
+                    {brew.bean.name}
+                  </h3>
+                </Link>
+                <p className="mt-3 text-sm text-[var(--ink-muted)]">
+                  {brew.method} · {formatNumber(brew.doseGrams, 1)} g /{" "}
+                  {formatNumber(brew.yieldMl)} ml
+                </p>
+                <div className="mt-auto flex items-end justify-between gap-3 pt-6">
+                  <span className="text-xs text-[var(--ink-muted)]">
+                    {formatDurationParts(brew.brewTimeMin, brew.brewTimeSec)}
+                  </span>
+                  <Link
+                    href={`/brews/new?from=${brew.id}`}
+                    className="text-xs font-bold text-[var(--accent-strong)] underline-offset-4 hover:underline"
+                  >
+                    Tekrar demle
+                  </Link>
                 </div>
-                <div className="text-sm text-[var(--ink-muted)]">
-                  {formatNumber(brew.doseGrams, 1)}g · {formatNumber(brew.yieldMl)}ml ·
-                  {" "}
-                  {formatDurationParts(brew.brewTimeMin, brew.brewTimeSec)}
-                </div>
-                {brew.tastingNotes && (
-                  <p className="text-sm">{brew.tastingNotes}</p>
-                )}
               </Card>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <Card className="mt-5 text-center">
+            <p className="text-sm text-[var(--ink-muted)]">
+              Henüz demleme kaydı yok.
+            </p>
+          </Card>
+        )}
       </section>
     </div>
   );

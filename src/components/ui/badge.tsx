@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 type BadgeProps = React.HTMLAttributes<HTMLSpanElement> & {
-  tone?: "default" | "success" | "warning";
+  tone?: "default" | "success" | "warning" | "danger";
 };
 
 export function Badge({
@@ -12,10 +12,13 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
-        tone === "default" && "bg-[rgba(209,161,42,0.2)] text-[var(--accent-2)]",
-        tone === "success" && "bg-[rgba(140,113,46,0.2)] text-[#6a4a1f]",
-        tone === "warning" && "bg-[rgba(224,176,63,0.3)] text-[#8d5a1f]",
+        "inline-flex items-center rounded-lg px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em]",
+        tone === "default" &&
+          "bg-[var(--accent-soft)] text-[var(--accent-strong)]",
+        tone === "success" && "bg-[var(--moss-soft)] text-[#3d4a35]",
+        tone === "warning" &&
+          "bg-[var(--warning-soft)] text-[var(--warning)]",
+        tone === "danger" && "bg-[var(--danger-soft)] text-[var(--danger)]",
         className
       )}
       {...props}

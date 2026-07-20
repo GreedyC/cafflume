@@ -1,14 +1,27 @@
+import Link from "next/link";
 import { BeanForm } from "@/components/forms/bean-form";
 
 export default function NewBeanPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Yeni Çekirdek</h1>
-        <p className="text-sm text-[var(--ink-muted)]">
-          Yeni kavrum paketini envantere ekle.
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-7">
+      <header className="journal-rule pb-6">
+        <Link
+          href="/beans"
+          className="text-xs font-bold text-[var(--ink-muted)] underline-offset-4 hover:text-[var(--ink)] hover:underline"
+        >
+          ← Çekirdeklere dön
+        </Link>
+        <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
+          Yeni paket · 01
         </p>
-      </div>
+        <h1 className="display-title mt-2 text-4xl font-semibold sm:text-5xl">
+          Çekirdeği günlüğe ekle
+        </h1>
+        <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--ink-muted)]">
+          Paket etiketindeki temel bilgileri kaydet. Kavrum tarihi tazelik
+          önerilerinin başlangıç noktasıdır.
+        </p>
+      </header>
       <BeanForm />
     </div>
   );

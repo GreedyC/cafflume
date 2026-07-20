@@ -1,27 +1,39 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+
 type ErrorProps = {
   error: Error & { digest?: string };
   reset: () => void;
 };
 
 export default function Error({ error, reset }: ErrorProps) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-      <div className="text-5xl">☕️</div>
-      <h1 className="text-2xl font-semibold text-[var(--brown)]">
-        Bir şeyler ters gitti.
-      </h1>
-      <p className="text-sm text-[var(--ink-muted)]">
-        Sayfayı yenileyebilir veya tekrar deneyebilirsin.
-      </p>
-      <button
-        type="button"
-        onClick={() => reset()}
-        className="rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-[var(--brown)] shadow-soft hover:bg-[var(--accent-2)]"
-      >
-        Tekrar dene
-      </button>
+    <div
+      role="alert"
+      className="grid min-h-[60vh] place-items-center text-center"
+    >
+      <div className="max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-[var(--shadow-md)]">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--danger)]">
+          Kayıt açılamadı
+        </p>
+        <h1 className="display-title mt-3 text-3xl font-semibold">
+          Bir şeyler yolunda gitmedi.
+        </h1>
+        <p className="mt-4 text-sm leading-6 text-[var(--ink-muted)]">
+          Bağlantıyı kontrol edip yeniden deneyebilirsin. Mevcut kayıtlarına
+          dokunulmadı.
+        </p>
+        <Button type="button" onClick={reset} className="mt-6">
+          Yeniden dene
+        </Button>
+      </div>
     </div>
   );
 }
