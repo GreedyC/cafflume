@@ -3,6 +3,12 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.ALLOW_DESTRUCTIVE_SEED !== "true") {
+    throw new Error(
+      "Seed mevcut verileri siler. Devam etmek için ALLOW_DESTRUCTIVE_SEED=true ayarla."
+    );
+  }
+
   await prisma.brewLog.deleteMany();
   await prisma.bean.deleteMany();
 
@@ -62,5 +68,8 @@ async function main() {
 }
 
 main()
-  .catch(console.error)
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
   .finally(() => prisma.$disconnect());

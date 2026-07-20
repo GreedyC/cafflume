@@ -21,6 +21,8 @@ model Bean {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   brewLogs   BrewLog[]
+
+  @@index([isFinished, roastDate(sort: Desc)])
 }
 
 model BrewLog {
@@ -38,4 +40,8 @@ model BrewLog {
   createdAt    DateTime @default(now())
 
   bean Bean @relation(fields: [beanId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([beanId, createdAt(sort: Desc)])
+  @@index([rating(sort: Desc), createdAt(sort: Desc)])
 }
