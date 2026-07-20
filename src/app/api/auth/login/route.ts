@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
+  authenticateCredentials,
   createSessionToken,
   rejectUntrustedOrigin,
   SESSION_COOKIE_NAME,
-  sessionCookieOptions,
-  verifyPassword
+  sessionCookieOptions
 } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { ApiRequestError, apiErrorResponse, readJsonBody } from "@/lib/api-security";
 
 const loginSchema = z
   .object({
+    email: z.string().trim().email().max(254),
     password: z.string().min(1).max(256)
   })
   .strict();
@@ -113,21 +115,26 @@ export async function POST(request: Request) {
       );
     }
 
-    let passwordIsValid = false;
+    let user = null;
     try {
-      passwordIsValid = await verifyPassword(parsed.data.password);
+      user = await authenticateCredentials(
+        parsed.data.email,
+        parsed.data.password
+      );
     } catch (error) {
       console.error("[auth.login] authentication is not configured", error);
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: "Giriş şu anda kullanılamıyor." },
         { status: 503 }
       );
+      response.headers.set("Cache-Control", "no-store");
+      return response;
     }
 
-    if (!passwordIsValid) {
+    if (!user) {
       recordFailure(clientKey, now);
       const response = NextResponse.json(
-        { error: "Parola hatalı." },
+        { error: "E-posta veya parola hatalı." },
         { status: 401 }
       );
       response.headers.set("Cache-Control", "no-store");
@@ -135,10 +142,14 @@ export async function POST(request: Request) {
     }
 
     loginAttempts.delete(clientKey);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() }
+    });
     const response = NextResponse.json({ ok: true });
     response.cookies.set(
       SESSION_COOKIE_NAME,
-      await createSessionToken(),
+      await createSessionToken(user.id, user.sessionVersion),
       sessionCookieOptions()
     );
     response.headers.set("Cache-Control", "no-store");

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Fraunces, Manrope } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
-import { AppShell } from "@/components/layout/app-shell";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -84,9 +83,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="tr" className={`${displayFont.variable} ${bodyFont.variable}`}>
+    <html
+      lang="tr"
+      suppressHydrationWarning
+      className={`${displayFont.variable} ${bodyFont.variable}`}
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=localStorage.getItem('brewstack-theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}"
+          }}
+        />
+      </head>
       <body>
-        <AppShell>{children}</AppShell>
+        {children}
         <Analytics />
         <SpeedInsights />
       </body>

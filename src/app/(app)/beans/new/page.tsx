@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { BeanForm } from "@/components/forms/bean-form";
+import { requirePageUser } from "@/lib/auth";
 
-export default function NewBeanPage() {
+export default async function NewBeanPage() {
+  await requirePageUser();
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-7">
       <header className="journal-rule pb-6">

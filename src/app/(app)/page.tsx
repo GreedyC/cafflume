@@ -10,6 +10,7 @@ import {
   formatDurationParts,
   formatNumber
 } from "@/lib/utils";
+import { requirePageUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ function getFreshness(days: number) {
 }
 
 export default async function DashboardPage() {
+  await requirePageUser();
   const now = new Date();
   const weekAgo = new Date(now);
   weekAgo.setHours(0, 0, 0, 0);

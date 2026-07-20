@@ -12,13 +12,13 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-2xl border p-5 shadow-[var(--shadow-sm)] sm:p-6",
+        "rounded-[1.35rem] border p-5 shadow-[var(--shadow-sm)] sm:p-6",
         tone === "default" &&
-          "border-[var(--border)] bg-[rgba(255,253,248,0.94)]",
+          "border-[var(--border)] bg-[var(--surface-glass)] backdrop-blur-sm",
         tone === "dark" &&
-          "border-transparent bg-[var(--surface-inverse)] text-white shadow-[var(--shadow-md)]",
+          "border-transparent bg-[var(--surface-inverse)] text-[var(--inverse-ink)] shadow-[var(--shadow-md)]",
         tone === "muted" &&
-          "border-[var(--border)] bg-[rgba(235,227,215,0.72)]",
+          "border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-2)_78%,transparent)]",
         className
       )}
       {...props}

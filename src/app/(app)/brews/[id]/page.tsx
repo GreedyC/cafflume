@@ -9,6 +9,7 @@ import {
   formatDurationParts,
   formatNumber
 } from "@/lib/utils";
+import { requirePageUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export default async function BrewDetailPage({ params }: Props) {
+  await requirePageUser();
   const { id } = await params;
   const brew = await prisma.brewLog.findUnique({
     where: { id },

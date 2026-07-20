@@ -11,6 +11,7 @@ import {
   formatDurationParts,
   formatNumber
 } from "@/lib/utils";
+import { requirePageUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ type Props = {
 };
 
 export default async function BeanDetailPage({ params }: Props) {
+  await requirePageUser();
   const { id } = await params;
   const bean = await prisma.bean.findUnique({
     where: { id },

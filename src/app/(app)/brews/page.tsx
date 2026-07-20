@@ -18,6 +18,7 @@ import {
 } from "@/lib/utils";
 import { firstSearchParam, type SearchParamValue } from "@/lib/search-params";
 import { pageSchema } from "@/lib/validations";
+import { requirePageUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,7 @@ type Props = {
 };
 
 export default async function BrewsPage({ searchParams }: Props) {
+  await requirePageUser();
   const resolvedSearchParams = await searchParams;
   const parsedPage = pageSchema.safeParse(
     firstSearchParam(resolvedSearchParams.page) ?? 1

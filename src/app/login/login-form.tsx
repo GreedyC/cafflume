@@ -7,6 +7,9 @@ import { safeAppDestination } from "@/lib/navigation";
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [email, setEmail] = useState(
+    searchParams.get("email") ?? "admin@brewstack.local"
+  );
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -20,7 +23,7 @@ export function LoginForm() {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ email, password })
       });
       const result = (await response.json()) as { error?: string };
 
@@ -45,6 +48,27 @@ export function LoginForm() {
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         <label
+          htmlFor="email"
+          className="text-sm font-semibold text-[var(--ink)]"
+        >
+          E-posta
+        </label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          maxLength={254}
+          required
+          autoFocus
+          className="field-control"
+        />
+      </div>
+      <div className="flex flex-col gap-2">
+        <label
           htmlFor="password"
           className="text-sm font-semibold text-[var(--ink)]"
         >
@@ -60,8 +84,7 @@ export function LoginForm() {
           minLength={1}
           maxLength={256}
           required
-          autoFocus
-          className="h-12 rounded-xl border border-[var(--border-strong)] bg-[var(--surface)] px-4 text-[var(--ink)] outline-none transition placeholder:text-[var(--ink-soft)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)]"
+          className="field-control"
         />
       </div>
       {status === "error" && (

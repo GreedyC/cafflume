@@ -3,8 +3,12 @@ import {
   beanSchema,
   beanStatusSchema,
   brewLogSchema,
+  changePasswordSchema,
   idSchema,
-  pageSchema
+  pageSchema,
+  setPasswordSchema,
+  userInviteSchema,
+  userUpdateSchema
 } from "./validations";
 
 const validBean = {
@@ -102,5 +106,63 @@ describe("small request schemas", () => {
     expect(beanStatusSchema.safeParse({ isFinished: "false" }).success).toBe(
       false
     );
+  });
+});
+
+describe("workspace account schemas", () => {
+  it("normalizes invite emails and rejects privilege-shaped extra fields", () => {
+    const parsed = userInviteSchema.parse({
+      name: "  Ece  ",
+      email: "ECE@EXAMPLE.COM",
+      role: "MEMBER"
+    });
+    expect(parsed).toMatchObject({
+      name: "Ece",
+      email: "ece@example.com",
+      role: "MEMBER"
+    });
+    expect(
+      userInviteSchema.safeParse({
+        name: "Ece",
+        email: "ece@example.com",
+        role: "MEMBER",
+        isActive: true
+      }).success
+    ).toBe(false);
+  });
+
+  it("requires meaningful, matching password changes", () => {
+    expect(
+      changePasswordSchema.safeParse({
+        currentPassword: "old password value",
+        password: "a sufficiently long new password",
+        passwordConfirmation: "a sufficiently long new password"
+      }).success
+    ).toBe(true);
+    expect(
+      changePasswordSchema.safeParse({
+        currentPassword: "same password value",
+        password: "same password value",
+        passwordConfirmation: "same password value"
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts only a fixed-size invite token and an explicit user update", () => {
+    expect(
+      setPasswordSchema.safeParse({
+        token: "a".repeat(43),
+        password: "a sufficiently long password",
+        passwordConfirmation: "a sufficiently long password"
+      }).success
+    ).toBe(true);
+    expect(
+      setPasswordSchema.safeParse({
+        token: "../../stolen",
+        password: "a sufficiently long password",
+        passwordConfirmation: "a sufficiently long password"
+      }).success
+    ).toBe(false);
+    expect(userUpdateSchema.safeParse({}).success).toBe(false);
   });
 });

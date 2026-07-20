@@ -29,6 +29,64 @@ export const idSchema = z.string().uuid("Geçersiz kayıt kimliği");
 
 export const pageSchema = z.coerce.number().int().min(1).max(10_000);
 
+export const emailSchema = z
+  .string()
+  .trim()
+  .email("Geçerli bir e-posta gir")
+  .max(254, "E-posta çok uzun")
+  .transform((value) => value.toLocaleLowerCase("en-US"));
+
+export const passwordSchema = z
+  .string()
+  .min(12, "Parola en az 12 karakter olmalı")
+  .max(128, "Parola en fazla 128 karakter olabilir");
+
+export const userInviteSchema = z
+  .object({
+    name: requiredShortText("Ad zorunlu", 80),
+    email: emailSchema,
+    role: z.enum(["ADMIN", "MEMBER"]).default("MEMBER")
+  })
+  .strict();
+
+export const userUpdateSchema = z
+  .object({
+    role: z.enum(["ADMIN", "MEMBER"]).optional(),
+    isActive: z.boolean().optional()
+  })
+  .strict()
+  .refine((data) => data.role !== undefined || data.isActive !== undefined, {
+    message: "En az bir alan güncellenmeli"
+  });
+
+export const setPasswordSchema = z
+  .object({
+    token: z.string().regex(/^[A-Za-z0-9_-]{43}$/u, "Geçersiz davet bağlantısı"),
+    password: passwordSchema,
+    passwordConfirmation: z.string()
+  })
+  .strict()
+  .refine((data) => data.password === data.passwordConfirmation, {
+    message: "Parolalar eşleşmiyor",
+    path: ["passwordConfirmation"]
+  });
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1).max(256),
+    password: passwordSchema,
+    passwordConfirmation: z.string()
+  })
+  .strict()
+  .refine((data) => data.password === data.passwordConfirmation, {
+    message: "Yeni parolalar eşleşmiyor",
+    path: ["passwordConfirmation"]
+  })
+  .refine((data) => data.currentPassword !== data.password, {
+    message: "Yeni parola mevcut paroladan farklı olmalı",
+    path: ["password"]
+  });
+
 export const beanStatusSchema = z
   .object({
     isFinished: z.boolean()

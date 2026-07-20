@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { BrewForm } from "@/components/forms/brew-form";
 import { firstSearchParam, type SearchParamValue } from "@/lib/search-params";
 import { idSchema } from "@/lib/validations";
+import { requirePageUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export default async function NewBrewPage({ searchParams }: Props) {
+  await requirePageUser();
   const resolvedSearchParams = await searchParams;
   const sourceIdResult = idSchema.safeParse(
     firstSearchParam(resolvedSearchParams.from)

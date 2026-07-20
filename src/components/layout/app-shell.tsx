@@ -1,15 +1,15 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { Navbar } from "@/components/layout/navbar";
+import type { AuthenticatedUser } from "@/lib/auth";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-
-  if (pathname === "/login") {
-    return <>{children}</>;
-  }
-
+export function AppShell({
+  children,
+  user
+}: {
+  children: React.ReactNode;
+  user: AuthenticatedUser;
+}) {
   return (
     <>
       <a
@@ -18,11 +18,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         Ana içeriğe geç
       </a>
-      <div className="min-h-screen lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
-        <Navbar />
+      <div className="app-ambient" aria-hidden="true" />
+      <div className="relative min-h-screen lg:grid lg:grid-cols-[272px_minmax(0,1fr)]">
+        <Navbar user={user} />
         <main
           id="main-content"
-          className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 lg:px-10 lg:pb-14 lg:pt-10 xl:px-12"
+          className="mx-auto flex min-h-screen w-full max-w-[1520px] flex-col px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 lg:px-9 lg:pb-14 lg:pt-9 xl:px-12"
         >
           {children}
         </main>

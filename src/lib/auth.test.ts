@@ -2,18 +2,15 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-let createSessionToken: typeof import("./auth").createSessionToken;
+let createSessionToken: typeof import("./auth-session").createSessionToken;
 let hasTrustedOrigin: typeof import("./auth").hasTrustedOrigin;
-let verifyPassword: typeof import("./auth").verifyPassword;
-let verifySessionToken: typeof import("./auth").verifySessionToken;
+let verifyPassword: typeof import("./auth-session").verifyPassword;
+let verifySessionToken: typeof import("./auth-session").verifySessionToken;
 
 beforeAll(async () => {
-  ({
-    createSessionToken,
-    hasTrustedOrigin,
-    verifyPassword,
-    verifySessionToken
-  } = await import("./auth"));
+  ({ hasTrustedOrigin } = await import("./auth"));
+  ({ createSessionToken, verifyPassword, verifySessionToken } =
+    await import("./auth-session"));
 });
 
 afterEach(() => {
@@ -53,23 +50,32 @@ async function makePasswordHash(password: string) {
 describe("session tokens", () => {
   it("accepts a valid token and rejects tampering", async () => {
     vi.stubEnv("BREWSTACK_SESSION_SECRET", "s".repeat(48));
-    const token = await createSessionToken();
+    const token = await createSessionToken(
+      "550e8400-e29b-41d4-a716-446655440000",
+      1
+    );
     const [payload, signature] = token.split(".");
 
-    await expect(verifySessionToken(token)).resolves.toBe(true);
+    await expect(verifySessionToken(token)).resolves.toMatchObject({
+      uid: "550e8400-e29b-41d4-a716-446655440000",
+      sv: 1
+    });
     await expect(
       verifySessionToken(`${payload}.${signature.slice(0, -1)}x`)
-    ).resolves.toBe(false);
+    ).resolves.toBeNull();
   });
 
   it("rejects an expired token", async () => {
     vi.stubEnv("BREWSTACK_SESSION_SECRET", "s".repeat(48));
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-01T00:00:00Z"));
-    const token = await createSessionToken();
+    const token = await createSessionToken(
+      "550e8400-e29b-41d4-a716-446655440000",
+      1
+    );
     vi.setSystemTime(new Date("2026-07-09T00:00:00Z"));
 
-    await expect(verifySessionToken(token)).resolves.toBe(false);
+    await expect(verifySessionToken(token)).resolves.toBeNull();
   });
 });
 

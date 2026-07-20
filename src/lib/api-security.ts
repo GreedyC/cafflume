@@ -69,15 +69,35 @@ export function apiErrorResponse(error: unknown, context: string) {
       : null;
 
   if (prismaCode === "P2025") {
-    return NextResponse.json({ error: "Kayıt bulunamadı." }, { status: 404 });
+    const response = NextResponse.json(
+      { error: "Kayıt bulunamadı." },
+      { status: 404 }
+    );
+    response.headers.set("Cache-Control", "no-store");
+    return response;
   }
   if (prismaCode === "P2003") {
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: "Kayıt ilişkili veriler nedeniyle güncellenemedi." },
       { status: 409 }
     );
+    response.headers.set("Cache-Control", "no-store");
+    return response;
+  }
+  if (prismaCode === "P2002") {
+    const response = NextResponse.json(
+      { error: "Bu bilgiyle eşleşen bir kayıt zaten var." },
+      { status: 409 }
+    );
+    response.headers.set("Cache-Control", "no-store");
+    return response;
   }
 
   console.error(`[${context}] request failed`, error);
-  return NextResponse.json({ error: "Sunucu hatası." }, { status: 500 });
+  const response = NextResponse.json(
+    { error: "Sunucu hatası." },
+    { status: 500 }
+  );
+  response.headers.set("Cache-Control", "no-store");
+  return response;
 }

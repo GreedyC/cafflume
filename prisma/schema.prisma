@@ -8,6 +8,29 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum UserRole {
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id              String   @id @default(uuid())
+  name            String
+  email           String   @unique
+  passwordHash    String?
+  role            UserRole @default(MEMBER)
+  isActive        Boolean  @default(true)
+  sessionVersion  Int      @default(1)
+  inviteTokenHash String?  @unique
+  inviteExpiresAt DateTime?
+  lastLoginAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
+  @@index([role, isActive])
+}
+
 model Bean {
   id         String    @id @default(uuid())
   roaster    String

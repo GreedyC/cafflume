@@ -2,10 +2,12 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { buttonStyles } from "@/components/ui/button";
 import { BeansTable } from "@/components/beans/beans-table";
+import { requirePageUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function BeansPage() {
+  await requirePageUser();
   const beans = await prisma.bean.findMany({
     orderBy: { roastDate: "desc" },
     include: {

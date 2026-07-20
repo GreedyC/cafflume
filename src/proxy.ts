@@ -3,12 +3,14 @@ import {
   SESSION_COOKIE_NAME,
   sessionCookieOptions,
   verifySessionToken
-} from "@/lib/auth";
+} from "@/lib/auth-session";
 
 const PUBLIC_PATHS = new Set([
   "/login",
+  "/set-password",
   "/og.png",
   "/api/auth/login",
+  "/api/auth/set-password",
   "/api/auth/logout"
 ]);
 
