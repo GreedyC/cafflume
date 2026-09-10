@@ -349,8 +349,9 @@ a {
 .brand-name { font-weight: 800; letter-spacing: -0.035em; }
 .brand-caption { margin-top: .15rem; font-size: .58rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
 .language-switcher { position: fixed; z-index: 60; left: 1.25rem; bottom: 6.25rem; }
-.language-switcher select { min-height: 2.5rem; max-width: 13rem; border: 1px solid rgba(255,255,255,.16); border-radius: .5rem; background: #20292a; padding: 0 .7rem; color: white; font-size: .75rem; font-weight: 700; outline: none; }
+.language-switcher select, .sidebar-language-select { min-height: 2.5rem; width: 100%; border: 1px solid rgba(255,255,255,.16); border-radius: .5rem; background: var(--surface-inverse); padding: 0 .7rem; color: white; font-size: .75rem; font-weight: 700; outline: none; }
 .language-switcher select:focus-visible { box-shadow: 0 0 0 3px var(--ring); }
+.sidebar-language-select:focus-visible { box-shadow: 0 0 0 3px var(--ring); }
 .dashboard-workspace { display: flex; flex-direction: column; gap: 1rem; }
 .dashboard-workspace, .dashboard-lower-grid > * { min-width: 0; }
 .live-console { border: 1px solid var(--border-strong); border-radius: .75rem; background: var(--surface-elevated); overflow: hidden; }

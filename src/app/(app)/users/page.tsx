@@ -1,9 +1,13 @@
 import { UsersPanel, type WorkspaceUser } from "@/components/users/users-panel";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPageUser } from "@/lib/auth";
+import { getLocale } from "@/lib/i18n-server";
+import { usersCopy } from "@/lib/i18n-users";
 
 export default async function UsersPage() {
   const currentUser = await requireAdminPageUser();
+  const locale = await getLocale();
+  const c = usersCopy[locale];
   const records = await prisma.user.findMany({
     orderBy: [{ isActive: "desc" }, { createdAt: "asc" }],
     select: {
@@ -33,16 +37,15 @@ export default async function UsersPage() {
   return (
     <div className="flex flex-col gap-7">
       <header className="journal-rule pb-6">
-        <p className="panel-kicker">Workspace access</p>
+        <p className="panel-kicker">{c.kicker}</p>
         <h1 className="display-title mt-2 text-4xl font-semibold sm:text-5xl">
-          Ekip ve erişim
+          {c.title}
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">
-          Kullanıcı ekle, tek kullanımlık davet paylaş ve çalışma alanının
-          rollerini güvenle yönet.
+          {c.intro}
         </p>
       </header>
-      <UsersPanel users={users} currentUserId={currentUser.id} />
+      <UsersPanel users={users} currentUserId={currentUser.id} locale={locale} />
     </div>
   );
 }

@@ -6,6 +6,8 @@ import { beanSchema } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { Locale } from "@/lib/i18n";
+import { beanCopy } from "@/lib/i18n-beans";
 
 type BeanFormState = {
   roaster: string;
@@ -44,7 +46,8 @@ function FieldError({
   );
 }
 
-export function BeanForm() {
+export function BeanForm({ locale }: { locale: Locale }) {
+  const c = beanCopy[locale];
   const router = useRouter();
   const [formData, setFormData] = useState<BeanFormState>(initialState);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -79,7 +82,7 @@ export function BeanForm() {
       }
       setErrors(fieldErrors);
       setStatus("error");
-      setMessage("İşaretli alanları kontrol et.");
+      setMessage(c.checkFields);
       const firstField = Object.keys(fieldErrors)[0];
       window.setTimeout(() => document.getElementById(firstField)?.focus(), 0);
       return;
@@ -103,7 +106,7 @@ export function BeanForm() {
           router.replace("/login?next=%2Fbeans%2Fnew");
           return;
         }
-        setMessage(result?.error ?? "Çekirdek kaydedilemedi.");
+        setMessage(result?.error ?? c.saveFailed);
         setStatus("error");
         return;
       }
@@ -111,7 +114,7 @@ export function BeanForm() {
       router.refresh();
     } catch {
       setStatus("error");
-      setMessage("Bağlantı kurulamadı. Lütfen yeniden dene.");
+      setMessage(c.connectionFailed);
     }
   };
 
@@ -125,68 +128,68 @@ export function BeanForm() {
       <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)] sm:p-7">
         <div className="border-b border-[var(--border)] pb-5">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--accent)]">
-            01 · Kimlik
+            01 · {c.identity}
           </p>
           <h2 className="display-title mt-2 text-2xl font-semibold">
-            Etikette ne yazıyor?
+            {c.labelQuestion}
           </h2>
         </div>
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="roaster">Kavurucu</Label>
+            <Label htmlFor="roaster">{c.roaster}</Label>
             <Input
               id="roaster"
               autoComplete="organization"
               value={formData.roaster}
               onChange={(event) => updateField("roaster", event.target.value)}
-              placeholder="Örn. Null Coffee"
+              placeholder={c.roasterExample}
               {...fieldProps("roaster")}
             />
             <FieldError field="roaster" errors={errors} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="name">Çekirdek adı</Label>
+            <Label htmlFor="name">{c.name}</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(event) => updateField("name", event.target.value)}
-              placeholder="Örn. Finca El Paraiso"
+              placeholder={c.nameExample}
               {...fieldProps("name")}
             />
             <FieldError field="name" errors={errors} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="origin">Menşei</Label>
+            <Label htmlFor="origin">{c.origin}</Label>
             <Input
               id="origin"
               value={formData.origin}
               onChange={(event) => updateField("origin", event.target.value)}
-              placeholder="Örn. Colombia"
+              placeholder={c.originExample}
               {...fieldProps("origin")}
             />
             <FieldError field="origin" errors={errors} />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="variety">
-              Varyete{" "}
+              {c.variety}{" "}
               <span className="font-normal text-[var(--ink-muted)]">
-                (opsiyonel)
+                ({c.optional})
               </span>
             </Label>
             <Input
               id="variety"
               value={formData.variety}
               onChange={(event) => updateField("variety", event.target.value)}
-              placeholder="Örn. Red Bourbon"
+              placeholder={c.varietyExample}
             />
           </div>
           <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="process">İşlem</Label>
+            <Label htmlFor="process">{c.process}</Label>
             <Input
               id="process"
               value={formData.process}
               onChange={(event) => updateField("process", event.target.value)}
-              placeholder="Örn. Washed, Natural, Anaerobic"
+              placeholder={c.processExample}
               {...fieldProps("process")}
             />
             <FieldError field="process" errors={errors} />
@@ -197,15 +200,15 @@ export function BeanForm() {
       <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)] sm:p-7">
         <div className="border-b border-[var(--border)] pb-5">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--accent)]">
-            02 · Tazelik
+            02 · {c.freshness}
           </p>
           <h2 className="display-title mt-2 text-2xl font-semibold">
-            Paketin zaman çizgisi
+            {c.timeline}
           </h2>
         </div>
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="roastDate">Kavrum tarihi</Label>
+            <Label htmlFor="roastDate">{c.roastDate}</Label>
             <Input
               id="roastDate"
               type="date"
@@ -217,9 +220,9 @@ export function BeanForm() {
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="openDate">
-              Paket açılışı{" "}
+              {c.openDate}{" "}
               <span className="font-normal text-[var(--ink-muted)]">
-                (opsiyonel)
+                ({c.optional})
               </span>
             </Label>
             <Input
@@ -242,7 +245,7 @@ export function BeanForm() {
               className="h-5 w-5 accent-[var(--accent)]"
             />
             <span className="text-sm font-semibold">
-              Paketi arşivde başlat
+              {c.archived}
             </span>
           </label>
         </div>
@@ -255,11 +258,11 @@ export function BeanForm() {
           className="text-xs text-[var(--ink-muted)]"
         >
           {status === "error"
-            ? message || "Kaydedilemedi."
-            : "Bilgileri daha sonra paket detayından izleyebilirsin."}
+            ? message || c.saveFailed
+            : c.followLater}
         </p>
         <Button type="submit" disabled={status === "loading"}>
-          {status === "loading" ? "Kaydediliyor…" : "Çekirdeği kaydet"}
+          {status === "loading" ? c.saving : c.save}
         </Button>
       </div>
     </form>

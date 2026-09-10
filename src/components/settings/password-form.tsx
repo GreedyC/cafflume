@@ -3,10 +3,13 @@
 import { KeyRound, ShieldCheck } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import type { Locale } from "@/lib/i18n";
+import { settingsCopy } from "@/lib/i18n-settings";
 
 type Status = "idle" | "loading" | "success" | "error";
 
-export function PasswordForm() {
+export function PasswordForm({locale}:{locale:Locale}) {
+  const c=settingsCopy[locale];
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
@@ -30,15 +33,15 @@ export function PasswordForm() {
       const result = (await response.json()) as { error?: string };
       if (!response.ok) {
         setStatus("error");
-        setMessage(result.error ?? "Parola değiştirilemedi.");
+        setMessage(result.error ?? c.failed);
         return;
       }
       formRef.current?.reset();
       setStatus("success");
-      setMessage("Parolan değiştirildi; diğer açık oturumların kapatıldı.");
+      setMessage(c.success);
     } catch {
       setStatus("error");
-      setMessage("Bağlantı kurulamadı. Lütfen tekrar dene.");
+      setMessage(c.connection);
     }
   };
 
@@ -46,7 +49,7 @@ export function PasswordForm() {
     <form ref={formRef} onSubmit={handleSubmit} className="mt-6 space-y-5">
       <div>
         <label htmlFor="currentPassword" className="text-sm font-semibold">
-          Mevcut parola
+          {c.current}
         </label>
         <input
           id="currentPassword"
@@ -61,7 +64,7 @@ export function PasswordForm() {
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label htmlFor="newPassword" className="text-sm font-semibold">
-            Yeni parola
+            {c.newPassword}
           </label>
           <input
             id="newPassword"
@@ -76,7 +79,7 @@ export function PasswordForm() {
         </div>
         <div>
           <label htmlFor="passwordConfirmation" className="text-sm font-semibold">
-            Yeni parola tekrar
+            {c.confirm}
           </label>
           <input
             id="passwordConfirmation"
@@ -92,8 +95,7 @@ export function PasswordForm() {
       </div>
       <p className="flex items-start gap-2 text-xs leading-5 text-[var(--ink-muted)]">
         <ShieldCheck className="mt-0.5 shrink-0 text-[var(--moss)]" size={15} />
-        En az 12 karakter kullan. Değişiklikten sonra eski oturum belirteçleri
-        geçersiz hale gelir.
+        {c.passwordHint}
       </p>
       {message && (
         <p
@@ -109,7 +111,7 @@ export function PasswordForm() {
       )}
       <Button type="submit" disabled={status === "loading"}>
         <KeyRound aria-hidden="true" size={16} />
-        {status === "loading" ? "Güncelleniyor…" : "Parolayı değiştir"}
+        {status === "loading" ? c.updating : c.changeButton}
       </Button>
     </form>
   );

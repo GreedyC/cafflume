@@ -6,24 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { Locale } from "@/lib/i18n";
+import { cuppingCopy } from "@/lib/i18n-cupping";
 
 type BeanOption = { id: string; label: string };
 type Dimension = "fragranceAroma" | "flavor" | "aftertaste" | "acidity" | "sweetness" | "body" | "balance" | "overall";
 
-const dimensions: { key: Dimension; label: string; hint: string }[] = [
-  { key: "fragranceAroma", label: "Fragrance / aroma", hint: "Dry fragrance and wet aroma" },
-  { key: "flavor", label: "Flavor", hint: "Quality, intensity and character" },
-  { key: "aftertaste", label: "Aftertaste", hint: "Length and quality of the finish" },
-  { key: "acidity", label: "Acidity", hint: "Brightness, structure and quality" },
-  { key: "sweetness", label: "Sweetness", hint: "Perceived sweetness and ripeness" },
-  { key: "body", label: "Body", hint: "Weight and tactile quality" },
-  { key: "balance", label: "Balance", hint: "How the attributes work together" },
-  { key: "overall", label: "Overall", hint: "Your holistic impression" }
-];
+const dimensionKeys: Dimension[] = ["fragranceAroma","flavor","aftertaste","acidity","sweetness","body","balance","overall"];
 
-const initialScores = Object.fromEntries(dimensions.map(({ key }) => [key, 7.5])) as Record<Dimension, number>;
+const initialScores = Object.fromEntries(dimensionKeys.map((key) => [key, 7.5])) as Record<Dimension, number>;
 
-export function CuppingForm({ beans, defaultBeanId = "" }: { beans: BeanOption[]; defaultBeanId?: string }) {
+export function CuppingForm({ beans, locale, defaultBeanId = "" }: { beans: BeanOption[]; locale: Locale; defaultBeanId?: string }) {
+  const c = cuppingCopy[locale];
   const router = useRouter();
   const [beanId, setBeanId] = useState(defaultBeanId);
   const [scores, setScores] = useState(initialScores);
@@ -39,7 +33,7 @@ export function CuppingForm({ beans, defaultBeanId = "" }: { beans: BeanOption[]
     event.preventDefault();
     if (!beanId) {
       setStatus("error");
-      setMessage("Choose a coffee before saving the cupping.");
+      setMessage(c.chooseError);
       return;
     }
     setStatus("loading");
@@ -51,12 +45,12 @@ export function CuppingForm({ beans, defaultBeanId = "" }: { beans: BeanOption[]
         body: JSON.stringify({ beanId, ...scores, notes: notes || undefined })
       });
       const result = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(result?.error ?? "Cupping could not be saved.");
+      if (!response.ok) throw new Error(result?.error ?? c.saveError);
       router.push("/cuppings?saved=1");
       router.refresh();
     } catch (error) {
       setStatus("error");
-      setMessage(error instanceof Error ? error.message : "Cupping could not be saved.");
+      setMessage(error instanceof Error ? error.message : c.saveError);
     }
   };
 
@@ -64,21 +58,23 @@ export function CuppingForm({ beans, defaultBeanId = "" }: { beans: BeanOption[]
     <form onSubmit={submit} className="cupping-form">
       <div className="cupping-toolbar">
         <div className="min-w-0 flex-1">
-          <Label htmlFor="cupping-bean">Coffee</Label>
+          <Label htmlFor="cupping-bean">{c.coffee}</Label>
           <Select id="cupping-bean" value={beanId} onChange={(event) => setBeanId(event.target.value)}>
-            <option value="">Choose an active coffee</option>
+            <option value="">{c.choose}</option>
             {beans.map((bean) => <option key={bean.id} value={bean.id}>{bean.label}</option>)}
           </Select>
         </div>
         <div className="cupping-total" aria-live="polite">
-          <span>Structured score</span>
+          <span>{c.structured}</span>
           <strong>{total}</strong>
           <small>/ 100</small>
         </div>
       </div>
 
       <div className="cupping-dimensions">
-        {dimensions.map(({ key, label, hint }) => (
+        {dimensionKeys.map((key, index) => {
+          const [label, hint] = c.dimensions[index];
+          return (
           <label key={key} className="score-row">
             <span><strong>{label}</strong><small>{hint}</small></span>
             <input
@@ -91,17 +87,18 @@ export function CuppingForm({ beans, defaultBeanId = "" }: { beans: BeanOption[]
             />
             <output>{scores[key].toFixed(2)}</output>
           </label>
-        ))}
+          );
+        })}
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="cupping-notes">Sensory notes</Label>
-        <Textarea id="cupping-notes" rows={5} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Fragrance, flavor development, finish, defects and observations…" />
+        <Label htmlFor="cupping-notes">{c.sensoryNotes}</Label>
+        <Textarea id="cupping-notes" rows={5} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={c.placeholder} />
       </div>
 
       <div className="sticky-action-rail">
-        <p role="status" aria-live="polite">{message || "Scores are saved as a structured personal evaluation, not an official SCA score."}</p>
-        <Button type="submit" disabled={status === "loading"}>{status === "loading" ? "Saving…" : "Save cupping"}</Button>
+        <p role="status" aria-live="polite">{message || c.personalNotice}</p>
+        <Button type="submit" disabled={status === "loading"}>{status === "loading" ? c.saving : c.save}</Button>
       </div>
     </form>
   );

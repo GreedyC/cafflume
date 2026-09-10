@@ -17,20 +17,10 @@ import {
   type MoveDirection
 } from "@/lib/game2048";
 import { Button } from "@/components/ui/button";
+import type { Locale } from "@/lib/i18n";
+import { gameCopy } from "@/lib/i18n-game";
 
-const tileStory: Record<number, { label: string; icon: string }> = {
-  2: { label: "Yeşil", icon: "◖" },
-  4: { label: "Kavrum", icon: "◗" },
-  8: { label: "Dinlenme", icon: "◆" },
-  16: { label: "Öğütüm", icon: "✦" },
-  32: { label: "Bloom", icon: "◎" },
-  64: { label: "Döküş", icon: "◌" },
-  128: { label: "Demleme", icon: "♨" },
-  256: { label: "Aroma", icon: "✺" },
-  512: { label: "Fincan", icon: "◒" },
-  1024: { label: "Ustalık", icon: "✹" },
-  2048: { label: "Perfect", icon: "★" }
-};
+const tileIcons = ["◖","◗","◆","✦","◎","◌","♨","✺","◒","✹","★"];
 
 const directionByKey: Record<string, MoveDirection | undefined> = {
   ArrowUp: "up",
@@ -64,7 +54,8 @@ function getBestScoreSnapshot() {
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
-export function Coffee2048() {
+export function Coffee2048({ locale }: { locale: Locale }) {
+  const c = gameCopy[locale];
   const [board, setBoard] = useState<number[]>(() => [
     0, 0, 0, 0,
     0, 2, 0, 0,
@@ -134,24 +125,24 @@ export function Coffee2048() {
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex gap-2">
             <div className="score-chip">
-              <span>Skor</span>
+              <span>{c.score}</span>
               <strong>{score}</strong>
             </div>
             <div className="score-chip">
-              <span>Rekor</span>
+              <span>{c.best}</span>
               <strong>{best}</strong>
             </div>
           </div>
           <Button variant="secondary" size="sm" onClick={reset}>
             <RotateCcw size={14} />
-            Yeni tur
+            {c.newRound}
           </Button>
         </div>
 
         <div
           className="bean-board relative mx-auto grid aspect-square w-full max-w-[620px] grid-cols-4 gap-2 rounded-[1.4rem] p-2 sm:gap-3 sm:p-3"
           role="application"
-          aria-label="Bean Merge oyun tahtası. Ok tuşları veya kaydırma hareketiyle oyna."
+          aria-label={c.boardLabel}
           tabIndex={0}
           onPointerDown={(event) => {
             touchStart.current = { x: event.clientX, y: event.clientY };
@@ -162,21 +153,22 @@ export function Coffee2048() {
           }}
         >
           {board.map((value, index) => {
-            const story = tileStory[Math.min(value, 2048)];
+            const storyIndex = value ? Math.min(10, Math.log2(value) - 1) : 0;
+            const label = c.tiles[storyIndex];
             return (
               <div
                 key={index}
                 data-value={value || "empty"}
                 className="bean-tile"
-                aria-label={value ? `${value}, ${story?.label ?? "usta fincan"}` : "boş"}
+                aria-label={value ? `${value}, ${label ?? c.masterCup}` : c.empty}
               >
                 {value > 0 && (
                   <>
                     <span aria-hidden="true" className="bean-tile-icon">
-                      {story?.icon ?? "★"}
+                      {tileIcons[storyIndex] ?? "★"}
                     </span>
                     <strong>{value}</strong>
-                    <small>{story?.label ?? "Usta"}</small>
+                    <small>{label ?? c.master}</small>
                   </>
                 )}
               </div>
@@ -187,18 +179,18 @@ export function Coffee2048() {
               <div>
                 <Trophy className="mx-auto text-[var(--accent-2)]" size={34} />
                 <h2 className="display-title mt-3 text-3xl font-semibold">
-                  {won ? "Mükemmel fincan!" : "Öğütüm bitti."}
+                  {won ? c.won : c.over}
                 </h2>
                 <p className="mt-2 text-sm text-white/70">
                   {won
-                    ? "2048’e ulaştın; istersen ustalık turuna devam et."
-                    : "Tahtada hamle kalmadı. Yeni bir reçeteyle tekrar dene."}
+                    ? c.wonHint
+                    : c.overHint}
                 </p>
                 <Button
                   onClick={won && !gameOver ? () => setWinAcknowledged(true) : reset}
                   className="mt-5"
                 >
-                  {won && !gameOver ? "Ustalık turuna devam et" : "Yeni tur başlat"}
+                  {won && !gameOver ? c.continue : c.restart}
                 </Button>
               </div>
             </div>
@@ -209,7 +201,7 @@ export function Coffee2048() {
           <span />
           <button
             type="button"
-            aria-label="Yukarı"
+            aria-label={c.up}
             onClick={() => performMove("up")}
             className="game-arrow"
           >
@@ -218,7 +210,7 @@ export function Coffee2048() {
           <span />
           <button
             type="button"
-            aria-label="Sol"
+            aria-label={c.left}
             onClick={() => performMove("left")}
             className="game-arrow"
           >
@@ -226,7 +218,7 @@ export function Coffee2048() {
           </button>
           <button
             type="button"
-            aria-label="Aşağı"
+            aria-label={c.down}
             onClick={() => performMove("down")}
             className="game-arrow"
           >
@@ -234,7 +226,7 @@ export function Coffee2048() {
           </button>
           <button
             type="button"
-            aria-label="Sağ"
+            aria-label={c.right}
             onClick={() => performMove("right")}
             className="game-arrow"
           >
@@ -245,13 +237,12 @@ export function Coffee2048() {
 
       <aside className="space-y-4">
         <div className="rounded-[1.35rem] border border-[var(--border)] bg-[var(--surface-glass)] p-5 shadow-[var(--shadow-sm)]">
-          <p className="panel-kicker">Nasıl oynanır?</p>
+          <p className="panel-kicker">{c.how}</p>
           <h2 className="display-title mt-2 text-2xl font-semibold">
-            Çekirdekleri birleştir
+            {c.merge}
           </h2>
           <p className="mt-3 text-sm leading-6 text-[var(--ink-muted)]">
-            Aynı seviyedeki iki çekirdeği buluştur. Yeşil çekirdekten kusursuz
-            fincana ilerle ve 2048’e ulaş.
+            {c.instructions}
           </p>
           <div className="mt-5 grid grid-cols-4 gap-2 text-center text-[10px] font-bold text-[var(--ink-muted)]">
             {[
@@ -269,11 +260,10 @@ export function Coffee2048() {
         </div>
         <div className="rounded-[1.35rem] border border-[var(--border)] bg-[var(--surface-inverse)] p-5 text-white shadow-[var(--shadow-md)]">
           <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--accent-2)]">
-            Coffee break
+            {c.break}
           </p>
           <p className="mt-3 text-sm leading-6 text-white/70">
-            Rekorun yalnızca bu cihazda saklanır; çalışma alanı hesabına veya
-            veritabanına yazılmaz.
+            {c.localOnly}
           </p>
         </div>
       </aside>

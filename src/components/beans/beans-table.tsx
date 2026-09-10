@@ -22,6 +22,7 @@ import {
   formatDaysSince,
   formatNumber
 } from "@/lib/utils";
+import type { Locale } from "@/lib/i18n";
 
 type BeanData = {
   id: string;
@@ -44,29 +45,36 @@ type BeanData = {
 
 type BeansTableProps = {
   beans: BeanData[];
+  locale: Locale;
 };
 
 type StatusFilter = "all" | "active" | "finished";
 
-const statusFilters: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "active", label: "Active" },
-  { value: "finished", label: "Archived" }
-];
+const tableCopy:Record<Locale,string[]>={
+en:["All","Active","Archived","Resting","Ready","Use first","Operation failed.","Coffee archived.","Coffee reactivated.","Coffee and linked brews deleted.","Inventory summary","Total","Search coffees","Search roaster, coffee, origin or process…","Coffee status","coffees shown","Clear search","No coffees match this filter.","Clear the search or add a coffee to the library.","Roast age","Brews","Last score","Brew this coffee","Reactivate","Archive","Delete","Coffee","Profile","Roast","Records","Last result","Status","Action"],
+tr:["Tümü","Aktif","Arşiv","Dinleniyor","Hazır","Önce kullan","İşlem tamamlanamadı.","Çekirdek arşivlendi.","Çekirdek yeniden etkinleştirildi.","Çekirdek ve bağlı demlemeler silindi.","Envanter özeti","Toplam","Çekirdek ara","Kavurucu, çekirdek, menşei veya işlem ara…","Çekirdek durumu","çekirdek gösteriliyor","Aramayı temizle","Bu filtreyle eşleşen çekirdek yok.","Aramayı temizle veya kütüphaneye çekirdek ekle.","Kavrum yaşı","Demlemeler","Son puan","Bu çekirdeği demle","Aktif et","Arşivle","Sil","Çekirdek","Profil","Kavrum","Kayıt","Son sonuç","Durum","Aksiyon"],
+es:["Todos","Activos","Archivados","Reposando","Listo","Usar primero","La operación falló.","Café archivado.","Café reactivado.","Café y preparaciones vinculadas eliminados.","Resumen del inventario","Total","Buscar cafés","Buscar tostador, café, origen o proceso…","Estado del café","cafés mostrados","Limpiar búsqueda","Ningún café coincide con este filtro.","Limpia la búsqueda o añade un café.","Edad del tueste","Preparaciones","Última puntuación","Preparar este café","Reactivar","Archivar","Eliminar","Café","Perfil","Tueste","Registros","Último resultado","Estado","Acción"],
+de:["Alle","Aktiv","Archiviert","Ruht","Bereit","Zuerst verwenden","Vorgang fehlgeschlagen.","Kaffee archiviert.","Kaffee reaktiviert.","Kaffee und verknüpfte Brühungen gelöscht.","Bestandsübersicht","Gesamt","Kaffee suchen","Rösterei, Kaffee, Herkunft oder Aufbereitung suchen…","Kaffeestatus","Kaffees angezeigt","Suche löschen","Keine Kaffees entsprechen diesem Filter.","Suche löschen oder Kaffee hinzufügen.","Röstalter","Brühungen","Letzte Wertung","Diesen Kaffee brühen","Reaktivieren","Archivieren","Löschen","Kaffee","Profil","Röstung","Einträge","Letztes Ergebnis","Status","Aktion"],
+no:["Alle","Aktive","Arkiverte","Hviler","Klar","Bruk først","Handlingen mislyktes.","Kaffe arkivert.","Kaffe reaktivert.","Kaffe og tilknyttede brygg slettet.","Lageroversikt","Totalt","Søk etter kaffe","Søk etter brenneri, kaffe, opprinnelse eller prosess…","Kaffestatus","kaffer vist","Tøm søk","Ingen kaffer samsvarer med filteret.","Tøm søket eller legg til kaffe.","Brenningsalder","Brygg","Siste poeng","Brygg denne kaffen","Aktiver","Arkiver","Slett","Kaffe","Profil","Brenning","Oppføringer","Siste resultat","Status","Handling"],
+ja:["すべて","使用中","アーカイブ","休養中","適期","優先使用","操作に失敗しました。","コーヒーをアーカイブしました。","コーヒーを再有効化しました。","コーヒーと関連する抽出記録を削除しました。","在庫の概要","合計","コーヒーを検索","ロースター、コーヒー、産地、精製方法を検索…","コーヒーの状態","件表示","検索をクリア","条件に一致するコーヒーはありません。","検索をクリアするかコーヒーを追加してください。","焙煎日数","抽出回数","最新スコア","このコーヒーを抽出","再有効化","アーカイブ","削除","コーヒー","プロフィール","焙煎","記録","最新結果","状態","操作"],
+ko:["전체","활성","보관됨","휴지 중","준비됨","먼저 사용","작업에 실패했습니다.","원두를 보관했습니다.","원두를 다시 활성화했습니다.","원두와 연결된 추출 기록을 삭제했습니다.","재고 요약","전체","원두 검색","로스터, 원두, 원산지 또는 가공 방식 검색…","원두 상태","개 원두 표시","검색 초기화","필터와 일치하는 원두가 없습니다.","검색을 초기화하거나 원두를 추가하세요.","로스팅 경과","추출","최근 점수","이 원두 추출","다시 활성화","보관","삭제","원두","프로필","로스팅","기록","최근 결과","상태","작업"]
+};
 
-function freshnessFor(bean: BeanData) {
-  if (bean.isFinished) return { label: "Archived", tone: "default" as const };
+function freshnessFor(bean: BeanData, c:string[]) {
+  if (bean.isFinished) return { label: c[2], tone: "default" as const };
   const value = new Date(bean.roastDate);
   const days = Math.max(
     0,
     Math.floor((Date.now() - value.getTime()) / (1000 * 60 * 60 * 24))
   );
-  if (days < 5) return { label: "Resting", tone: "warning" as const };
-  if (days <= 30) return { label: "Ready", tone: "success" as const };
-  return { label: "Use first", tone: "danger" as const };
+  if (days < 5) return { label: c[3], tone: "warning" as const };
+  if (days <= 30) return { label: c[4], tone: "success" as const };
+  return { label: c[5], tone: "danger" as const };
 }
 
-export function BeansTable({ beans: initialBeans }: BeansTableProps) {
+export function BeansTable({ beans: initialBeans, locale }: BeansTableProps) {
+  const c=tableCopy[locale];
+  const statusFilters:{value:StatusFilter;label:string}[]=[{value:"all",label:c[0]},{value:"active",label:c[1]},{value:"finished",label:c[2]}];
   const router = useRouter();
   const [beans, setBeans] = useState<BeanData[]>(initialBeans);
   const [query, setQuery] = useState("");
@@ -81,7 +89,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
   }, [beans]);
 
   const filteredBeans = useMemo(() => {
-    const term = query.trim().toLocaleLowerCase("tr-TR");
+    const term = query.trim().toLocaleLowerCase(locale === "no" ? "nb-NO" : locale);
     return beans.filter((bean) => {
       if (statusFilter === "active" && bean.isFinished) return false;
       if (statusFilter === "finished" && !bean.isFinished) return false;
@@ -94,10 +102,10 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
         bean.variety ?? ""
       ]
         .join(" ")
-        .toLocaleLowerCase("tr-TR")
+        .toLocaleLowerCase(locale === "no" ? "nb-NO" : locale)
         .includes(term);
     });
-  }, [beans, query, statusFilter]);
+  }, [beans, query, statusFilter, locale]);
 
   const pushNotice = (message: string) => {
     setNotice(message);
@@ -120,19 +128,19 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
           router.replace("/login?next=%2Fbeans");
           return;
         }
-        throw new Error(result?.error ?? "İşlem tamamlanamadı.");
+        throw new Error(result?.error ?? c[6]);
       }
       setBeans((current) =>
         current.map((bean) =>
           bean.id === beanId ? { ...bean, isFinished: nextStatus } : bean
         )
       );
-      pushNotice(nextStatus ? "Coffee archived." : "Coffee reactivated.");
+      pushNotice(nextStatus ? c[7] : c[8]);
     } catch (error) {
       pushNotice(
         error instanceof Error
           ? error.message
-          : "İşlem tamamlanamadı. Lütfen yeniden dene."
+          : c[6]
       );
     } finally {
       setBusyId(null);
@@ -153,17 +161,17 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
           router.replace("/login?next=%2Fbeans");
           return;
         }
-        throw new Error(result?.error ?? "Silme işlemi tamamlanamadı.");
+        throw new Error(result?.error ?? c[6]);
       }
       setBeans((current) => current.filter((bean) => bean.id !== beanId));
       setDeleteTarget(null);
-      pushNotice("Coffee and linked brews deleted.");
+      pushNotice(c[9]);
     } catch (error) {
       setDeleteTarget(null);
       pushNotice(
         error instanceof Error
           ? error.message
-          : "Silme işlemi tamamlanamadı."
+          : c[6]
       );
     } finally {
       setBusyId(null);
@@ -173,13 +181,11 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
   return (
     <div className="flex flex-col gap-5">
       <section
-        aria-label="Inventory summary"
+        aria-label={c[10]}
         className="grid grid-cols-3 gap-2 sm:gap-4"
       >
         {[
-          { label: "Total", value: counts.total },
-          { label: "Active", value: counts.active },
-          { label: "Archived", value: counts.finished }
+          { label: c[11], value: counts.total }, { label: c[1], value: counts.active }, { label: c[2], value: counts.finished }
         ].map((item) => (
           <Card key={item.label} className="p-4 sm:p-5">
             <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)] sm:text-[10px]">
@@ -195,19 +201,19 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
       <div className="grid gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_auto]">
         <div>
           <label htmlFor="bean-search" className="sr-only">
-            Search coffees
+            {c[12]}
           </label>
           <Input
             id="bean-search"
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search roaster, coffee, origin or process…"
+            placeholder={c[13]}
           />
         </div>
         <div
           className="grid grid-cols-3 gap-1 rounded-xl bg-[var(--surface-2)] p-1"
-          aria-label="Coffee status"
+          aria-label={c[14]}
         >
           {statusFilters.map((filter) => (
             <button
@@ -229,14 +235,14 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
       </div>
 
       <div className="flex items-center justify-between text-xs text-[var(--ink-muted)]">
-        <p aria-live="polite">{filteredBeans.length} coffees shown</p>
+        <p aria-live="polite">{filteredBeans.length} {c[15]}</p>
         {query && (
           <button
             type="button"
             className="font-bold text-[var(--accent-strong)] underline-offset-4 hover:underline"
             onClick={() => setQuery("")}
           >
-            Clear search
+            {c[16]}
           </button>
         )}
       </div>
@@ -254,17 +260,17 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
       {filteredBeans.length === 0 ? (
         <Card className="py-14 text-center">
           <p className="display-title text-2xl font-semibold">
-            No coffees match this filter.
+            {c[17]}
           </p>
           <p className="mt-2 text-sm text-[var(--ink-muted)]">
-            Clear the search or add a coffee to the library.
+            {c[18]}
           </p>
         </Card>
       ) : (
         <>
           <div className="grid gap-4 lg:hidden">
             {filteredBeans.map((bean) => {
-              const freshness = freshnessFor(bean);
+              const freshness = freshnessFor(bean,c);
               return (
                 <Card key={bean.id} className="flex flex-col gap-5">
                   <div className="flex items-start justify-between gap-3">
@@ -288,15 +294,15 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                   <div className="grid grid-cols-3 gap-2 border-y border-[var(--border)] py-4">
                     <div>
                       <p className="text-[9px] uppercase tracking-wider text-[var(--ink-soft)]">
-                        Roast age
+                        {c[19]}
                       </p>
                       <p className="mt-1 text-xs font-bold">
-                        {formatDaysSince(bean.roastDate)}
+                        {formatDaysSince(bean.roastDate,locale)}
                       </p>
                     </div>
                     <div>
                       <p className="text-[9px] uppercase tracking-wider text-[var(--ink-soft)]">
-                        Brews
+                        {c[20]}
                       </p>
                       <p className="mt-1 text-xs font-bold tabular-nums">
                         {bean.brewCount}
@@ -304,11 +310,11 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                     </div>
                     <div>
                       <p className="text-[9px] uppercase tracking-wider text-[var(--ink-soft)]">
-                        Son puan
+                        {c[21]}
                       </p>
                       <p className="mt-1 text-xs font-bold tabular-nums">
                         {bean.lastBrew
-                          ? `${formatNumber(bean.lastBrew.rating, 1)}/10`
+                          ? `${formatNumber(bean.lastBrew.rating, 1,locale)}/10`
                           : "—"}
                       </p>
                     </div>
@@ -319,7 +325,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                         href={`/brews/new?bean=${bean.id}`}
                         className={buttonStyles({ size: "sm" })}
                       >
-                        Brew this coffee
+                        {c[22]}
                       </Link>
                     )}
                     <Button
@@ -331,7 +337,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                         handleToggleStatus(bean.id, !bean.isFinished)
                       }
                     >
-                      {bean.isFinished ? "Reactivate" : "Archive"}
+                      {bean.isFinished ? c[23] : c[24]}
                     </Button>
                     <Button
                       type="button"
@@ -340,7 +346,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                       disabled={busyId === bean.id}
                       onClick={() => setDeleteTarget(bean)}
                     >
-                      Sil
+                      {c[25]}
                     </Button>
                   </div>
                 </Card>
@@ -352,20 +358,15 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableHeaderCell>Çekirdek</TableHeaderCell>
-                  <TableHeaderCell>Profil</TableHeaderCell>
-                  <TableHeaderCell>Kavrum</TableHeaderCell>
-                  <TableHeaderCell>Kayıt</TableHeaderCell>
-                  <TableHeaderCell>Son sonuç</TableHeaderCell>
-                  <TableHeaderCell>Durum</TableHeaderCell>
+                  <TableHeaderCell>{c[26]}</TableHeaderCell><TableHeaderCell>{c[27]}</TableHeaderCell><TableHeaderCell>{c[28]}</TableHeaderCell><TableHeaderCell>{c[29]}</TableHeaderCell><TableHeaderCell>{c[30]}</TableHeaderCell><TableHeaderCell>{c[31]}</TableHeaderCell>
                   <TableHeaderCell className="text-right">
-                    Aksiyon
+                    {c[32]}
                   </TableHeaderCell>
                 </TableRow>
               </TableHead>
               <tbody>
                 {filteredBeans.map((bean) => {
-                  const freshness = freshnessFor(bean);
+                  const freshness = freshnessFor(bean,c);
                   return (
                     <TableRow key={bean.id}>
                       <TableCell>
@@ -387,9 +388,9 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                         </p>
                       </TableCell>
                       <TableCell>
-                        <p>{formatDate(bean.roastDate)}</p>
+                        <p>{formatDate(bean.roastDate,locale)}</p>
                         <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                          {formatDaysSince(bean.roastDate)}
+                          {formatDaysSince(bean.roastDate,locale)}
                         </p>
                       </TableCell>
                       <TableCell className="tabular-nums">
@@ -399,10 +400,10 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                         {bean.lastBrew ? (
                           <>
                             <p className="font-bold tabular-nums">
-                              {formatNumber(bean.lastBrew.rating, 1)}/10
+                              {formatNumber(bean.lastBrew.rating, 1,locale)}/10
                             </p>
                             <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                              {formatDateTime(bean.lastBrew.createdAt)}
+                              {formatDateTime(bean.lastBrew.createdAt,locale)}
                             </p>
                           </>
                         ) : (
@@ -422,7 +423,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                                 size: "sm"
                               })}
                             >
-                              Demle
+                              {c[22]}
                             </Link>
                           )}
                           <Button
@@ -434,7 +435,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                               handleToggleStatus(bean.id, !bean.isFinished)
                             }
                           >
-                            {bean.isFinished ? "Aktif et" : "Arşivle"}
+                            {bean.isFinished ? c[23] : c[24]}
                           </Button>
                           <Button
                             type="button"
@@ -444,7 +445,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                             disabled={busyId === bean.id}
                             onClick={() => setDeleteTarget(bean)}
                           >
-                            Sil
+                            {c[25]}
                           </Button>
                         </div>
                       </TableCell>
@@ -458,6 +459,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
       )}
 
       <DeleteConfirmDialog
+        locale={locale}
         open={deleteTarget !== null}
         beanName={
           deleteTarget ? `${deleteTarget.roaster} · ${deleteTarget.name}` : ""

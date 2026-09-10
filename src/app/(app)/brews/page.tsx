@@ -19,6 +19,8 @@ import {
 import { firstSearchParam, type SearchParamValue } from "@/lib/search-params";
 import { pageSchema } from "@/lib/validations";
 import { requirePageUser } from "@/lib/auth";
+import { getLocale } from "@/lib/i18n-server";
+import { brewListCopy } from "@/lib/i18n-brews";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +36,8 @@ type Props = {
 
 export default async function BrewsPage({ searchParams }: Props) {
   const user = await requirePageUser();
+  const locale = await getLocale();
+  const c = brewListCopy[locale];
   const resolvedSearchParams = await searchParams;
   const parsedPage = pageSchema.safeParse(
     firstSearchParam(resolvedSearchParams.page) ?? 1
@@ -85,36 +89,36 @@ export default async function BrewsPage({ searchParams }: Props) {
       <header className="journal-rule flex flex-col gap-4 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
-            Recipe archive
+            {c.kicker}
           </p>
           <h1 className="display-title mt-2 text-4xl font-semibold sm:text-5xl">
-            Brew log
+            {c.title}
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--ink-muted)]">
-            Revisit proven recipes and see how each controlled change affected the cup.
+            {c.intro}
           </p>
         </div>
         <Link href="/brews/new" className={buttonStyles()}>
-          Record brew
+          {c.record}
         </Link>
       </header>
 
       <section
-        aria-label="Brew summary"
+        aria-label={c.summary}
         className="grid grid-cols-3 gap-2 sm:gap-4"
       >
         {[
-          { label: "Total records", value: overall._count.toString() },
+          { label: c.total, value: overall._count.toString() },
           {
-            label: "Average",
+            label: c.average,
             value: overall._avg.rating
-              ? formatNumber(overall._avg.rating, 1)
+              ? formatNumber(overall._avg.rating, 1, locale)
               : "—"
           },
           {
-            label: "Highest",
+            label: c.highest,
             value: overall._max.rating
-              ? formatNumber(overall._max.rating, 1)
+              ? formatNumber(overall._max.rating, 1, locale)
               : "—"
           }
         ].map((item) => (
@@ -138,7 +142,7 @@ export default async function BrewsPage({ searchParams }: Props) {
             htmlFor="method-filter"
             className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]"
           >
-            Method
+            {c.method}
           </label>
           <select
             id="method-filter"
@@ -146,7 +150,7 @@ export default async function BrewsPage({ searchParams }: Props) {
             defaultValue={selectedMethod}
             className="min-h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)]"
           >
-            <option value="">All methods</option>
+            <option value="">{c.allMethods}</option>
             {methodRows.map(({ method }) => (
               <option key={method} value={method}>
                 {method}
@@ -159,7 +163,7 @@ export default async function BrewsPage({ searchParams }: Props) {
             htmlFor="rating-filter"
             className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]"
           >
-            Minimum score
+            {c.minScore}
           </label>
           <select
             id="rating-filter"
@@ -167,10 +171,10 @@ export default async function BrewsPage({ searchParams }: Props) {
             defaultValue={minRating || ""}
             className="min-h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)]"
           >
-            <option value="">All scores</option>
-            <option value="7">7 and above</option>
-            <option value="8">8 and above</option>
-            <option value="9">9 and above</option>
+            <option value="">{c.allScores}</option>
+            <option value="7">7 {c.andAbove}</option>
+            <option value="8">8 {c.andAbove}</option>
+            <option value="9">9 {c.andAbove}</option>
           </select>
         </div>
         <button
@@ -180,7 +184,7 @@ export default async function BrewsPage({ searchParams }: Props) {
             className: "self-end"
           })}
         >
-          Apply
+          {c.apply}
         </button>
         {(selectedMethod || minRating > 0) && (
           <Link
@@ -190,22 +194,22 @@ export default async function BrewsPage({ searchParams }: Props) {
               className: "self-end"
             })}
           >
-            Clear
+            {c.clear}
           </Link>
         )}
       </form>
 
       <p className="text-xs text-[var(--ink-muted)]">
-        {total} records · page {page}/{totalPages}
+        {total} {c.records} · {c.page} {page}/{totalPages}
       </p>
 
       {brews.length === 0 ? (
         <Card className="py-14 text-center">
           <p className="display-title text-2xl font-semibold">
-            No records match these filters.
+            {c.empty}
           </p>
           <p className="mt-2 text-sm text-[var(--ink-muted)]">
-            Clear the filters or add a new brew.
+            {c.emptyHint}
           </p>
         </Card>
       ) : (
@@ -226,7 +230,7 @@ export default async function BrewsPage({ searchParams }: Props) {
                     </Link>
                   </div>
                   <Badge tone={brew.rating >= 8 ? "success" : "default"}>
-                    {formatNumber(brew.rating, 1)}/10
+                    {formatNumber(brew.rating, 1, locale)}/10
                   </Badge>
                 </div>
                 <p className="text-sm text-[var(--ink-muted)]">
@@ -235,23 +239,23 @@ export default async function BrewsPage({ searchParams }: Props) {
                 <div className="grid grid-cols-3 gap-2 border-y border-[var(--border)] py-4">
                   <div>
                     <p className="text-[9px] uppercase tracking-wider text-[var(--ink-soft)]">
-                      Oran
+                      {c.ratio}
                     </p>
                     <p className="mt-1 text-xs font-bold tabular-nums">
-                      1:{formatNumber(brew.yieldMl / brew.doseGrams, 1)}
+                      1:{formatNumber(brew.yieldMl / brew.doseGrams, 1, locale)}
                     </p>
                   </div>
                   <div>
                     <p className="text-[9px] uppercase tracking-wider text-[var(--ink-soft)]">
-                      Sıcaklık
+                      {c.temperature}
                     </p>
                     <p className="mt-1 text-xs font-bold tabular-nums">
-                      {formatNumber(brew.waterTempC, 1)}°C
+                      {formatNumber(brew.waterTempC, 1, locale)}°C
                     </p>
                   </div>
                   <div>
                     <p className="text-[9px] uppercase tracking-wider text-[var(--ink-soft)]">
-                      Süre
+                      {c.duration}
                     </p>
                     <p className="mt-1 text-xs font-bold tabular-nums">
                       {brew.brewTimeMin}:{brew.brewTimeSec
@@ -262,13 +266,13 @@ export default async function BrewsPage({ searchParams }: Props) {
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <time className="text-[11px] text-[var(--ink-muted)]">
-                    {formatDateTime(brew.createdAt)}
+                    {formatDateTime(brew.createdAt, locale)}
                   </time>
                   <Link
                     href={`/brews/new?from=${brew.id}`}
                     className={buttonStyles({ variant: "secondary", size: "sm" })}
                   >
-                    Tekrar demle
+                    {c.repeat}
                   </Link>
                 </div>
               </Card>
@@ -279,14 +283,14 @@ export default async function BrewsPage({ searchParams }: Props) {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableHeaderCell>Çekirdek</TableHeaderCell>
-                  <TableHeaderCell>Yöntem</TableHeaderCell>
-                  <TableHeaderCell>Reçete</TableHeaderCell>
-                  <TableHeaderCell>Süre</TableHeaderCell>
-                  <TableHeaderCell>Puan</TableHeaderCell>
-                  <TableHeaderCell>Tarih</TableHeaderCell>
+                  <TableHeaderCell>{c.bean}</TableHeaderCell>
+                  <TableHeaderCell>{c.method}</TableHeaderCell>
+                  <TableHeaderCell>{c.recipe}</TableHeaderCell>
+                  <TableHeaderCell>{c.duration}</TableHeaderCell>
+                  <TableHeaderCell>{c.score}</TableHeaderCell>
+                  <TableHeaderCell>{c.date}</TableHeaderCell>
                   <TableHeaderCell className="text-right">
-                    Aksiyon
+                    {c.action}
                   </TableHeaderCell>
                 </TableRow>
               </TableHead>
@@ -311,24 +315,25 @@ export default async function BrewsPage({ searchParams }: Props) {
                       </p>
                     </TableCell>
                     <TableCell className="tabular-nums">
-                      {formatNumber(brew.doseGrams, 1)} g /{" "}
-                      {formatNumber(brew.yieldMl)} ml
+                      {formatNumber(brew.doseGrams, 1, locale)} g /{" "}
+                      {formatNumber(brew.yieldMl, 0, locale)} ml
                       <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                        1:{formatNumber(brew.yieldMl / brew.doseGrams, 1)}
+                        1:{formatNumber(brew.yieldMl / brew.doseGrams, 1, locale)}
                       </p>
                     </TableCell>
                     <TableCell>
                       {formatDurationParts(
                         brew.brewTimeMin,
-                        brew.brewTimeSec
+                        brew.brewTimeSec,
+                        locale
                       )}
                     </TableCell>
                     <TableCell>
                       <Badge tone={brew.rating >= 8 ? "success" : "default"}>
-                        {formatNumber(brew.rating, 1)}/10
+                        {formatNumber(brew.rating, 1, locale)}/10
                       </Badge>
                     </TableCell>
-                    <TableCell>{formatDateTime(brew.createdAt)}</TableCell>
+                    <TableCell>{formatDateTime(brew.createdAt, locale)}</TableCell>
                     <TableCell className="text-right">
                       <Link
                         href={`/brews/new?from=${brew.id}`}
@@ -337,7 +342,7 @@ export default async function BrewsPage({ searchParams }: Props) {
                           size: "sm"
                         })}
                       >
-                        Tekrar demle
+                        {c.repeat}
                       </Link>
                     </TableCell>
                   </TableRow>

@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import type { Locale } from "@/lib/i18n";
+import { usersCopy } from "@/lib/i18n-users";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -32,9 +34,9 @@ type InviteResult = {
   email: string;
 };
 
-function formatDate(value: string | null) {
-  if (!value) return "Henüz yok";
-  return new Intl.DateTimeFormat("tr-TR", {
+function formatDate(value: string | null, locale: Locale, never: string) {
+  if (!value) return never;
+  return new Intl.DateTimeFormat(locale === "no" ? "nb-NO" : locale, {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(value));
@@ -42,11 +44,14 @@ function formatDate(value: string | null) {
 
 export function UsersPanel({
   users,
-  currentUserId
+  currentUserId,
+  locale
 }: {
   users: WorkspaceUser[];
   currentUserId: string;
+  locale: Locale;
 }) {
+  const c = usersCopy[locale];
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -84,7 +89,7 @@ export function UsersPanel({
         user?: { email: string };
       };
       if (!response.ok || !result.inviteUrl || !result.inviteExpiresAt) {
-        showError(result.error ?? "Kullanıcı eklenemedi.");
+        showError(result.error ?? c.createError);
         return;
       }
       form.reset();
@@ -95,7 +100,7 @@ export function UsersPanel({
       });
       router.refresh();
     } catch {
-      showError("Bağlantı kurulamadı.");
+      showError(c.connectionError);
     } finally {
       setCreating(false);
     }
@@ -115,12 +120,12 @@ export function UsersPanel({
       });
       const result = (await response.json()) as { error?: string };
       if (!response.ok) {
-        showError(result.error ?? "Kullanıcı güncellenemedi.");
+        showError(result.error ?? c.updateError);
         return;
       }
       router.refresh();
     } catch {
-      showError("Bağlantı kurulamadı.");
+      showError(c.connectionError);
     } finally {
       setPendingId(null);
     }
@@ -139,7 +144,7 @@ export function UsersPanel({
         inviteExpiresAt?: string;
       };
       if (!response.ok || !result.inviteUrl || !result.inviteExpiresAt) {
-        showError(result.error ?? "Davet yenilenemedi.");
+        showError(result.error ?? c.renewError);
         return;
       }
       setInvite({
@@ -149,7 +154,7 @@ export function UsersPanel({
       });
       router.refresh();
     } catch {
-      showError("Bağlantı kurulamadı.");
+      showError(c.connectionError);
     } finally {
       setPendingId(null);
     }
@@ -171,16 +176,16 @@ export function UsersPanel({
               <UserPlus size={19} />
             </span>
             <div>
-              <p className="panel-kicker">Yeni koltuk</p>
+              <p className="panel-kicker">{c.newSeat}</p>
               <h2 className="display-title text-2xl font-semibold">
-                Kullanıcı davet et
+                {c.inviteUser}
               </h2>
             </div>
           </div>
           <form onSubmit={createUser} className="mt-6 space-y-4">
             <div>
               <label htmlFor="member-name" className="text-sm font-semibold">
-                Ad
+                {c.name}
               </label>
               <input
                 id="member-name"
@@ -188,12 +193,12 @@ export function UsersPanel({
                 required
                 maxLength={80}
                 className="field-control mt-2"
-                placeholder="Örn. Ece"
+                placeholder={c.nameExample}
               />
             </div>
             <div>
               <label htmlFor="member-email" className="text-sm font-semibold">
-                E-posta
+                {c.email}
               </label>
               <input
                 id="member-email"
@@ -207,7 +212,7 @@ export function UsersPanel({
             </div>
             <div>
               <label htmlFor="member-role" className="text-sm font-semibold">
-                Rol
+                {c.role}
               </label>
               <select
                 id="member-role"
@@ -215,8 +220,8 @@ export function UsersPanel({
                 defaultValue="MEMBER"
                 className="field-control mt-2"
               >
-                <option value="MEMBER">Üye</option>
-                <option value="ADMIN">Yönetici</option>
+                <option value="MEMBER">{c.member}</option>
+                <option value="ADMIN">{c.admin}</option>
               </select>
             </div>
             <Button type="submit" disabled={creating} className="w-full">
@@ -225,7 +230,7 @@ export function UsersPanel({
               ) : (
                 <UserPlus size={16} />
               )}
-              {creating ? "Oluşturuluyor…" : "Davet bağlantısı oluştur"}
+              {creating ? c.creating : c.createLink}
             </Button>
           </form>
         </Card>
@@ -233,10 +238,9 @@ export function UsersPanel({
         {invite && (
           <Card tone="muted" className="border-[var(--accent)]">
             <Link2 className="text-[var(--accent)]" size={20} />
-            <h3 className="mt-3 font-bold">Tek kullanımlık davet hazır</h3>
+            <h3 className="mt-3 font-bold">{c.inviteReady}</h3>
             <p className="mt-1 text-xs leading-5 text-[var(--ink-muted)]">
-              {invite.email} için bağlantıyı güvenli bir kanaldan paylaş. Bu
-              ekrandan ayrıldıktan sonra token tekrar gösterilmez.
+              {invite.email} · {c.inviteHint}
             </p>
             <div className="mt-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
               <p className="break-all text-xs text-[var(--ink-muted)]">
@@ -249,10 +253,10 @@ export function UsersPanel({
               className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--border)] px-3 text-xs font-bold outline-none transition hover:bg-[var(--surface-2)] focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             >
               {copied ? <Check size={15} /> : <Copy size={15} />}
-              {copied ? "Kopyalandı" : "Bağlantıyı kopyala"}
+              {copied ? c.copied : c.copy}
             </button>
             <p className="mt-3 text-[10px] text-[var(--ink-soft)]">
-              Son geçerlilik: {formatDate(invite.expiresAt)}
+              {c.expires}: {formatDate(invite.expiresAt, locale, c.never)}
             </p>
           </Card>
         )}
@@ -261,13 +265,13 @@ export function UsersPanel({
       <Card className="min-w-0">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="panel-kicker">Erişim matrisi</p>
+            <p className="panel-kicker">{c.matrix}</p>
             <h2 className="display-title mt-1 text-2xl font-semibold">
-              Çalışma alanı üyeleri
+              {c.members}
             </h2>
           </div>
           <span className="rounded-full bg-[var(--surface-2)] px-3 py-1 text-xs font-bold">
-            {users.length} hesap
+            {users.length} {users.length === 1 ? c.account : c.accounts}
           </span>
         </div>
 
@@ -290,14 +294,14 @@ export function UsersPanel({
               >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[var(--surface-inverse)] text-sm font-extrabold text-[var(--inverse-ink)]">
-                    {user.name.slice(0, 1).toLocaleUpperCase("tr-TR")}
+                    {user.name.slice(0, 1).toLocaleUpperCase(locale === "no" ? "nb-NO" : locale)}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-bold">{user.name}</h3>
                       {user.id === currentUserId && (
                         <span className="rounded-full bg-[var(--moss-soft)] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[var(--moss)]">
-                          Sen
+                          {c.you}
                         </span>
                       )}
                       <span
@@ -307,7 +311,7 @@ export function UsersPanel({
                             : "rounded-full bg-[var(--danger-soft)] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[var(--danger)]"
                         }
                       >
-                        {user.isActive ? "Aktif" : "Kapalı"}
+                        {user.isActive ? c.active : c.closed}
                       </span>
                     </div>
                     <p className="mt-1 truncate text-xs text-[var(--ink-muted)]">
@@ -315,13 +319,13 @@ export function UsersPanel({
                     </p>
                     <p className="mt-2 text-[10px] text-[var(--ink-soft)]">
                       {user.hasPassword
-                        ? `Son giriş: ${formatDate(user.lastLoginAt)}`
-                        : `Davet bekliyor · ${formatDate(user.inviteExpiresAt)}`}
+                        ? `${c.lastLogin}: ${formatDate(user.lastLoginAt, locale, c.never)}`
+                        : `${c.invitePending} · ${formatDate(user.inviteExpiresAt, locale, c.never)}`}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                     <label className="sr-only" htmlFor={`role-${user.id}`}>
-                      {user.name} rolü
+                      {user.name} {c.roleLabel}
                     </label>
                     <select
                       id={`role-${user.id}`}
@@ -334,14 +338,14 @@ export function UsersPanel({
                       }
                       className="h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                     >
-                      <option value="MEMBER">Üye</option>
-                      <option value="ADMIN">Yönetici</option>
+                      <option value="MEMBER">{c.member}</option>
+                      <option value="ADMIN">{c.admin}</option>
                     </select>
                     <button
                       type="button"
                       onClick={() => renewInvite(user)}
                       disabled={pending || !user.isActive}
-                      title={user.hasPassword ? "Parola sıfırlama daveti" : "Daveti yenile"}
+                      title={user.hasPassword ? c.passwordInvite : c.renew}
                       className="grid h-10 w-10 place-items-center rounded-xl border border-[var(--border)] text-[var(--ink-muted)] outline-none transition hover:bg-[var(--surface-2)] focus-visible:ring-2 focus-visible:ring-[var(--ring)] disabled:opacity-50"
                     >
                       {pending ? (
@@ -362,7 +366,7 @@ export function UsersPanel({
                           : "min-h-10 rounded-xl border border-[var(--border)] px-3 text-xs font-bold text-[var(--moss)] outline-none transition hover:bg-[var(--moss-soft)] focus-visible:ring-2 focus-visible:ring-[var(--ring)] disabled:opacity-45"
                       }
                     >
-                      {user.isActive ? "Erişimi kapat" : "Etkinleştir"}
+                      {user.isActive ? c.disable : c.enable}
                     </button>
                   </div>
                 </div>
@@ -373,8 +377,7 @@ export function UsersPanel({
 
         <div className="mt-5 flex items-start gap-2 rounded-xl bg-[var(--surface-2)] px-4 py-3 text-xs leading-5 text-[var(--ink-muted)]">
           <Shield className="mt-0.5 shrink-0 text-[var(--moss)]" size={15} />
-          Rol veya erişim değiştiğinde kullanıcının önceki oturumları otomatik
-          olarak geçersiz olur.
+          {c.securityHint}
         </div>
       </Card>
     </div>

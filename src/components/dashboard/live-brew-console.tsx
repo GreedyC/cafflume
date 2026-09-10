@@ -113,7 +113,7 @@ export function LiveBrewConsole({ beans, lastRecipe, locale }: { beans: Bean[]; 
   return (
     <section className="live-console" aria-labelledby="live-brew-title">
       <div className="live-console-heading">
-        <div><h1 id="live-brew-title">{t("liveBrew")}</h1><p>Repeat a proven recipe or change one variable at a time.</p></div>
+        <div><h1 id="live-brew-title">{t("liveBrew")}</h1><p>{t("liveHint")}</p></div>
         {lastRecipe && <button type="button" className="text-action" onClick={loadLast}><RotateCcw size={15} /> {t("repeatLast")}</button>}
       </div>
 
@@ -123,8 +123,8 @@ export function LiveBrewConsole({ beans, lastRecipe, locale }: { beans: Bean[]; 
           <select id="live-bean" value={recipe.beanId} onChange={(event) => setRecipe((value) => ({ ...value, beanId: event.target.value }))}>
             {beans.map((item) => <option key={item.id} value={item.id}>{item.roaster} · {item.name}</option>)}
           </select>
-          <strong>{bean?.name ?? "No active coffee"}</strong>
-          <span>{bean ? `${bean.roaster} · roasted ${bean.roastAge} ago` : "Add a coffee to begin"}</span>
+          <strong>{bean?.name ?? t("noActiveCoffee")}</strong>
+          <span>{bean ? `${bean.roaster} · ${bean.roastAge}` : t("addCoffeeBegin")}</span>
         </div>
 
         <div className="recipe-console">
@@ -138,12 +138,12 @@ export function LiveBrewConsole({ beans, lastRecipe, locale }: { beans: Bean[]; 
           </div>
           {lastRecipe && (
             <div className="delta-note" aria-live="polite">
-              {recipe.beanId !== lastRecipe.beanId ? "New coffee selected · comparison starts after its first brew." : recipeDelta.length === 0 ? (
-                <>Baseline recipe · change one field to run a controlled comparison.</>
+              {recipe.beanId !== lastRecipe.beanId ? t("newCoffeeComparison") : recipeDelta.length === 0 ? (
+                <>{t("baselineRecipe")}</>
               ) : recipeDelta.length === 1 ? (
                 <><strong>{recipeDelta[0].label}</strong> · {recipeDelta[0].before} → {recipeDelta[0].after}</>
               ) : (
-                <><strong>{recipeDelta.length} variables changed</strong> · return to one change for a clean comparison.</>
+                <><strong>{recipeDelta.length}</strong> {t("variablesChanged")}</>
               )}
             </div>
           )}
@@ -156,7 +156,7 @@ export function LiveBrewConsole({ beans, lastRecipe, locale }: { beans: Bean[]; 
             <button type="button" className="timer-primary" onClick={() => setRunning((value) => !value)} disabled={!recipe.beanId}>
               {running ? <Pause size={18} /> : <Play size={18} />} {running ? t("pause") : seconds ? t("resume") : t("startBrew")}
             </button>
-            {seconds > 0 && <button type="button" className="timer-secondary" onClick={reset}><Square size={16} /> Reset</button>}
+            {seconds > 0 && <button type="button" className="timer-secondary" onClick={reset}><Square size={16} /> {t("reset")}</button>}
           </div>
           {seconds > 0 && <Link href={finishHref} className={buttonStyles({ variant: "secondary", className: "w-full" })}>{t("finishRate")}</Link>}
         </div>

@@ -2,11 +2,13 @@
 
 import { useEffect, useId, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import type { Locale } from "@/lib/i18n";
 
 type DeleteConfirmDialogProps = {
   open: boolean;
   beanName: string;
   busy: boolean;
+  locale: Locale;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -15,9 +17,11 @@ export function DeleteConfirmDialog({
   open,
   beanName,
   busy,
+  locale,
   onConfirm,
   onCancel
 }: DeleteConfirmDialogProps) {
+  const c={en:["Irreversible action","Delete package?","and every linked brew will be permanently deleted.","Cancel","Deleting…","Delete permanently"],tr:["Geri alınamaz işlem","Paketi sil?","ve bağlı tüm demleme kayıtları kalıcı olarak silinecek.","Vazgeç","Siliniyor…","Kalıcı olarak sil"],es:["Acción irreversible","¿Eliminar paquete?","y todas sus preparaciones vinculadas se eliminarán permanentemente.","Cancelar","Eliminando…","Eliminar permanentemente"],de:["Nicht rückgängig zu machen","Packung löschen?","und alle verknüpften Brühungen werden dauerhaft gelöscht.","Abbrechen","Löschen…","Dauerhaft löschen"],no:["Kan ikke angres","Slette posen?","og alle tilknyttede brygg slettes permanent.","Avbryt","Sletter…","Slett permanent"],ja:["元に戻せない操作","パッケージを削除しますか？","と関連するすべての抽出記録が完全に削除されます。","キャンセル","削除中…","完全に削除"],ko:["되돌릴 수 없는 작업","패키지를 삭제할까요?","및 연결된 모든 추출 기록이 영구적으로 삭제됩니다.","취소","삭제 중…","영구 삭제"]}[locale];
   const titleId = useId();
   const descriptionId = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -86,17 +90,16 @@ export function DeleteConfirmDialog({
         className="w-full max-w-md rounded-2xl border border-white/10 bg-[var(--surface)] p-6 shadow-2xl"
       >
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--danger)]">
-          Geri alınamaz işlem
+          {c[0]}
         </p>
         <h2 id={titleId} className="display-title mt-2 text-3xl font-semibold">
-          Paketi sil?
+          {c[1]}
         </h2>
         <p
           id={descriptionId}
           className="mt-4 text-sm leading-6 text-[var(--ink-muted)]"
         >
-          <strong className="text-[var(--ink)]">{beanName}</strong> ve bu pakete
-          bağlı tüm demleme kayıtları kalıcı olarak silinecek.
+          <strong className="text-[var(--ink)]">{beanName}</strong> {c[2]}
         </p>
         <div className="mt-7 flex justify-end gap-2">
           <Button
@@ -106,7 +109,7 @@ export function DeleteConfirmDialog({
             onClick={onCancel}
             disabled={busy}
           >
-            Vazgeç
+            {c[3]}
           </Button>
           <Button
             type="button"
@@ -114,7 +117,7 @@ export function DeleteConfirmDialog({
             onClick={onConfirm}
             disabled={busy}
           >
-            {busy ? "Siliniyor…" : "Kalıcı olarak sil"}
+            {busy ? c[4] : c[5]}
           </Button>
         </div>
       </div>

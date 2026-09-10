@@ -28,6 +28,7 @@ export function Navbar({ user, locale }: { user: AuthenticatedUser; locale: Loca
   const pathname = usePathname();
   const router = useRouter();
   const t = translator(locale);
+  const themeLabel={en:"Change theme",tr:"Temayı değiştir",es:"Cambiar tema",de:"Theme ändern",no:"Endre tema",ja:"テーマを変更",ko:"테마 변경"}[locale];
   const [logoutPending, setLogoutPending] = useState(false);
   const [localePending, setLocalePending] = useState(false);
   const primaryLinks = [
@@ -114,25 +115,25 @@ export function Navbar({ user, locale }: { user: AuthenticatedUser; locale: Loca
             >
               <Bean size={21} strokeWidth={2.4} />
             </span>
-            <span><span className="brand-name block">BrewStack</span><span className="brand-caption block">Measure · brew · learn</span></span>
+            <span><span className="brand-name block">BrewStack</span><span className="brand-caption block">{t("tagline")}</span></span>
           </Link>
-          <ThemeToggle />
+          <ThemeToggle label={themeLabel} />
         </div>
 
         <div className="mt-9">
           <p className="px-3 text-[9px] font-extrabold uppercase tracking-[0.2em] text-[var(--ink-soft)]">
-            Workspace
+            {t("workspace")}
           </p>
-          <nav aria-label="Primary navigation" className="mt-2 flex flex-col gap-1">
+          <nav aria-label={t("primaryNav")} className="mt-2 flex flex-col gap-1">
             {primaryLinks.map(renderLink)}
           </nav>
         </div>
 
         <div className="mt-7">
           <p className="px-3 text-[9px] font-extrabold uppercase tracking-[0.2em] text-[var(--ink-soft)]">
-            Account
+            {t("account")}
           </p>
-          <nav aria-label="Account navigation" className="mt-2 flex flex-col gap-1">
+          <nav aria-label={t("accountNav")} className="mt-2 flex flex-col gap-1">
             {accountLinks.map(renderLink)}
           </nav>
         </div>
@@ -145,7 +146,14 @@ export function Navbar({ user, locale }: { user: AuthenticatedUser; locale: Loca
           {t("newBrew")}
         </Link>
 
-        <div className="mt-auto rounded-[1.35rem] border border-[var(--border)] bg-[var(--surface-elevated)] p-3.5 shadow-[var(--shadow-sm)]">
+        <label className="mt-auto block" title={t("language")}>
+          <span className="sr-only">{t("language")}</span>
+          <select className="sidebar-language-select" value={locale} disabled={localePending} onChange={(event) => changeLocale(event.target.value as Locale)}>
+            {locales.map((item) => <option key={item} value={item}>{item.toUpperCase()} · {localeNames[item]}</option>)}
+          </select>
+        </label>
+
+        <div className="mt-3 rounded-[1.35rem] border border-[var(--border)] bg-[var(--surface-elevated)] p-3.5 shadow-[var(--shadow-sm)]">
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[var(--surface-inverse)] text-sm font-extrabold text-[var(--inverse-ink)]">
               {user.name.slice(0, 1).toLocaleUpperCase("tr-TR")}
@@ -153,7 +161,7 @@ export function Navbar({ user, locale }: { user: AuthenticatedUser; locale: Loca
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold">{user.name}</p>
               <p className="truncate text-[10px] text-[var(--ink-muted)]">
-                {user.role === "ADMIN" ? "Admin" : "Member"} · {user.email}
+                {user.role === "ADMIN" ? t("admin") : t("member")} · {user.email}
               </p>
             </div>
             <button
@@ -181,7 +189,7 @@ export function Navbar({ user, locale }: { user: AuthenticatedUser; locale: Loca
           <span className="brand-name text-xl">BrewStack</span>
         </Link>
         <div className="flex items-center gap-2">
-          <ThemeToggle />
+          <ThemeToggle label={themeLabel} />
           <Link
             href="/brews/new"
             className="accent-sheen inline-flex min-h-10 items-center rounded-xl px-3.5 text-xs font-bold text-white outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
@@ -192,7 +200,7 @@ export function Navbar({ user, locale }: { user: AuthenticatedUser; locale: Loca
       </header>
 
       <nav
-        aria-label="Mobile navigation"
+        aria-label={t("mobileNav")}
         className="mobile-dock fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-xl border border-[var(--dock-border)] p-1.5 shadow-2xl lg:hidden"
       >
         {[...primaryLinks.filter((link) => link.href !== "/play"), accountLinks.at(-1)!].map((link) => {
@@ -217,7 +225,7 @@ export function Navbar({ user, locale }: { user: AuthenticatedUser; locale: Loca
         })}
       </nav>
 
-      <label className="language-switcher" title={t("language")}>
+      <label className="language-switcher lg:hidden" title={t("language")}>
         <span className="sr-only">{t("language")}</span>
         <select value={locale} disabled={localePending} onChange={(event) => changeLocale(event.target.value as Locale)}>
           {locales.map((item) => <option key={item} value={item}>{item.toUpperCase()} · {localeNames[item]}</option>)}

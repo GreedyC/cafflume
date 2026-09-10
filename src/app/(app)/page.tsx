@@ -22,7 +22,7 @@ export default async function DashboardPage() {
     id: bean.id,
     name: bean.name,
     roaster: bean.roaster,
-    roastAge: formatDaysSince(bean.roastDate)
+    roastAge: formatDaysSince(bean.roastDate, locale)
   }));
   const lastRecipe = last ? {
     id: last.id, beanId: last.beanId, method: last.method,
@@ -36,39 +36,39 @@ export default async function DashboardPage() {
       <LiveBrewConsole beans={beans} lastRecipe={lastRecipe} locale={locale} />
       <div className="dashboard-lower-grid">
         <section className="data-panel" aria-labelledby="active-coffees-title">
-          <div className="panel-heading"><div><h2 id="active-coffees-title">{t("activeBeans")}</h2><p>Roast age and next action</p></div><Link href="/beans">{t("viewAll")} →</Link></div>
+          <div className="panel-heading"><div><h2 id="active-coffees-title">{t("activeBeans")}</h2><p>{t("roastAgeAction")}</p></div><Link href="/beans">{t("viewAll")} →</Link></div>
           {beans.slice(0, 4).map((bean) => (
             <div key={bean.id} className="coffee-row">
               <span className="status-dot" aria-hidden="true" />
               <span><strong>{bean.name}</strong><small>{bean.roaster}</small></span>
               <span className="numeric">{bean.roastAge}</span>
-              <Link href={`/brews/new?bean=${bean.id}`}>Brew</Link>
-              <Link href={`/cuppings/new?bean=${bean.id}`}>Cup</Link>
+              <Link href={`/brews/new?bean=${bean.id}`}>{t("brew")}</Link>
+              <Link href={`/cuppings/new?bean=${bean.id}`}>{t("cup")}</Link>
             </div>
           ))}
-          {!beans.length && <div className="panel-empty">No active coffees. <Link href="/beans/new">Add one</Link></div>}
+          {!beans.length && <div className="panel-empty">{t("noActiveCoffees")} <Link href="/beans/new">{t("addOne")}</Link></div>}
         </section>
         <section className="data-panel" aria-labelledby="recent-brews-title">
-          <div className="panel-heading"><div><h2 id="recent-brews-title">{t("recentBrews")}</h2><p>Your latest recipe changes</p></div><Link href="/brews">{t("viewAll")} →</Link></div>
+          <div className="panel-heading"><div><h2 id="recent-brews-title">{t("recentBrews")}</h2><p>{t("latestChanges")}</p></div><Link href="/brews">{t("viewAll")} →</Link></div>
           {recentBrews.map((brew) => (
             <div key={brew.id} className="history-row">
-              <span><strong>{brew.bean.name}</strong><small>{brew.method} · {formatDateTime(brew.createdAt)}</small></span>
-              <span className="numeric">1:{formatNumber(brew.yieldMl / brew.doseGrams, 1)}</span>
-              <span className="score-chip">{formatNumber(brew.rating, 1)}</span>
-              <Link href={`/brews/new?from=${brew.id}`}>Repeat</Link>
+              <span><strong>{brew.bean.name}</strong><small>{brew.method} · {formatDateTime(brew.createdAt, locale)}</small></span>
+              <span className="numeric">1:{formatNumber(brew.yieldMl / brew.doseGrams, 1, locale)}</span>
+              <span className="score-chip">{formatNumber(brew.rating, 1, locale)}</span>
+              <Link href={`/brews/new?from=${brew.id}`}>{t("repeat")}</Link>
             </div>
           ))}
-          {!recentBrews.length && <div className="panel-empty">No brews recorded yet.</div>}
+          {!recentBrews.length && <div className="panel-empty">{t("noBrews")}</div>}
         </section>
         <section className="data-panel" aria-labelledby="cupping-title">
-          <div className="panel-heading"><div><h2 id="cupping-title">{t("cupping")}</h2><p>Structured sensory sessions</p></div><Link href="/cuppings/new">{t("newCupping")} +</Link></div>
+          <div className="panel-heading"><div><h2 id="cupping-title">{t("cupping")}</h2><p>{t("sensorySessions")}</p></div><Link href="/cuppings/new">{t("newCupping")} +</Link></div>
           {recentCuppings.map((session) => (
             <div key={session.id} className="history-row">
-              <span><strong>{session.bean.name}</strong><small>{formatDateTime(session.createdAt)}</small></span>
-              <span className="score-chip score-chip-large">{formatNumber(session.totalScore, 1)}</span>
+              <span><strong>{session.bean.name}</strong><small>{formatDateTime(session.createdAt, locale)}</small></span>
+              <span className="score-chip score-chip-large">{formatNumber(session.totalScore, 1, locale)}</span>
             </div>
           ))}
-          {!recentCuppings.length && <div className="panel-empty">No sessions yet. <Link href="/cuppings/new">Create the first cupping</Link></div>}
+          {!recentCuppings.length && <div className="panel-empty">{t("noSessions")} <Link href="/cuppings/new">{t("createFirstCupping")}</Link></div>}
         </section>
       </div>
     </div>
