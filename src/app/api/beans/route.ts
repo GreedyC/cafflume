@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { beanSchema } from "@/lib/validations";
 import {
   rejectUntrustedOrigin,
-  requireAuthentication
+  requireApiUser
 } from "@/lib/auth";
 import {
   ApiRequestError,
@@ -12,13 +12,12 @@ import {
 } from "@/lib/api-security";
 
 export async function GET(request: Request) {
-  const authError = await requireAuthentication(request);
-  if (authError) {
-    return authError;
-  }
+  const { user, response } = await requireApiUser(request);
+  if (response) return response;
 
   try {
     const beans = await prisma.bean.findMany({
+      where: { userId: user.id },
       orderBy: { roastDate: "desc" },
       take: 500
     });
@@ -31,10 +30,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const authError = await requireAuthentication(request);
-  if (authError) {
-    return authError;
-  }
+  const { user, response } = await requireApiUser(request);
+  if (response) return response;
   const originError = rejectUntrustedOrigin(request);
   if (originError) {
     return originError;
@@ -56,6 +53,7 @@ export async function POST(request: Request) {
 
     const bean = await prisma.bean.create({
       data: {
+        userId: user.id,
         ...parsed.data,
         roastDate: parsed.data.roastDate,
         openDate: parsed.data.openDate ?? null

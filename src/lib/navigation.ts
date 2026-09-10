@@ -16,7 +16,7 @@ export function safeAppDestination(
     const destination = new URL(value, origin);
     const isKnownPath =
       destination.pathname === "/" ||
-      /^\/(?:beans|brews)(?:\/|$)/u.test(destination.pathname);
+      /^\/(?:beans|brews|cuppings)(?:\/|$)/u.test(destination.pathname);
     if (destination.origin !== origin || !isKnownPath) {
       return "/";
     }

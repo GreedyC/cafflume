@@ -11,17 +11,16 @@ export default async function NewBeanPage() {
           href="/beans"
           className="text-xs font-bold text-[var(--ink-muted)] underline-offset-4 hover:text-[var(--ink)] hover:underline"
         >
-          ← Çekirdeklere dön
+          ← Beans
         </Link>
         <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
-          Yeni paket · 01
+          New package
         </p>
         <h1 className="display-title mt-2 text-4xl font-semibold sm:text-5xl">
-          Çekirdeği günlüğe ekle
+          Add coffee to your library
         </h1>
         <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--ink-muted)]">
-          Paket etiketindeki temel bilgileri kaydet. Kavrum tarihi tazelik
-          önerilerinin başlangıç noktasıdır.
+          Record the package details. The roast date powers freshness guidance.
         </p>
       </header>
       <BeanForm />

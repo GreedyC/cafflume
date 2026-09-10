@@ -6,7 +6,9 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ["var(--font-sans)", "sans-serif"],
-        display: ["var(--font-display)", "serif"]
+        display: ["var(--font-sans)", "sans-serif"],
+        serif: ["var(--font-sans)", "sans-serif"],
+        mono: ["var(--font-mono)", "monospace"]
       },
       colors: {
         surface: "var(--surface)",

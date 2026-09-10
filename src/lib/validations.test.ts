@@ -3,6 +3,7 @@ import {
   beanSchema,
   beanStatusSchema,
   brewLogSchema,
+  cuppingSessionSchema,
   changePasswordSchema,
   idSchema,
   pageSchema,
@@ -65,6 +66,30 @@ describe("beanSchema", () => {
     expect(
       beanSchema.safeParse({ ...validBean, name: "x".repeat(121) }).success
     ).toBe(false);
+  });
+});
+
+describe("cuppingSessionSchema", () => {
+  const validCupping = {
+    beanId: validBrew.beanId,
+    fragranceAroma: 8.25,
+    flavor: 8.5,
+    aftertaste: 8,
+    acidity: 8.25,
+    sweetness: 8.5,
+    body: 7.75,
+    balance: 8.25,
+    overall: 8.5,
+    notes: "Floral, structured and clean"
+  };
+
+  it("accepts eight structured sensory dimensions", () => {
+    expect(cuppingSessionSchema.safeParse(validCupping).success).toBe(true);
+  });
+
+  it("rejects out-of-range scores and extra fields", () => {
+    expect(cuppingSessionSchema.safeParse({ ...validCupping, acidity: 10.25 }).success).toBe(false);
+    expect(cuppingSessionSchema.safeParse({ ...validCupping, officialSca: true }).success).toBe(false);
   });
 });
 

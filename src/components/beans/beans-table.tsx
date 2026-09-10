@@ -49,21 +49,21 @@ type BeansTableProps = {
 type StatusFilter = "all" | "active" | "finished";
 
 const statusFilters: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: "Tümü" },
-  { value: "active", label: "Aktif" },
-  { value: "finished", label: "Biten" }
+  { value: "all", label: "All" },
+  { value: "active", label: "Active" },
+  { value: "finished", label: "Archived" }
 ];
 
 function freshnessFor(bean: BeanData) {
-  if (bean.isFinished) return { label: "Arşiv", tone: "default" as const };
+  if (bean.isFinished) return { label: "Archived", tone: "default" as const };
   const value = new Date(bean.roastDate);
   const days = Math.max(
     0,
     Math.floor((Date.now() - value.getTime()) / (1000 * 60 * 60 * 24))
   );
-  if (days < 5) return { label: "Dinleniyor", tone: "warning" as const };
-  if (days <= 30) return { label: "İdeal", tone: "success" as const };
-  return { label: "Öncelikli", tone: "danger" as const };
+  if (days < 5) return { label: "Resting", tone: "warning" as const };
+  if (days <= 30) return { label: "Ready", tone: "success" as const };
+  return { label: "Use first", tone: "danger" as const };
 }
 
 export function BeansTable({ beans: initialBeans }: BeansTableProps) {
@@ -127,7 +127,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
           bean.id === beanId ? { ...bean, isFinished: nextStatus } : bean
         )
       );
-      pushNotice(nextStatus ? "Paket arşive alındı." : "Paket yeniden aktif.");
+      pushNotice(nextStatus ? "Coffee archived." : "Coffee reactivated.");
     } catch (error) {
       pushNotice(
         error instanceof Error
@@ -157,7 +157,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
       }
       setBeans((current) => current.filter((bean) => bean.id !== beanId));
       setDeleteTarget(null);
-      pushNotice("Paket ve ilişkili demlemeler silindi.");
+      pushNotice("Coffee and linked brews deleted.");
     } catch (error) {
       setDeleteTarget(null);
       pushNotice(
@@ -173,13 +173,13 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
   return (
     <div className="flex flex-col gap-5">
       <section
-        aria-label="Envanter özeti"
+        aria-label="Inventory summary"
         className="grid grid-cols-3 gap-2 sm:gap-4"
       >
         {[
-          { label: "Toplam", value: counts.total },
-          { label: "Aktif", value: counts.active },
-          { label: "Arşiv", value: counts.finished }
+          { label: "Total", value: counts.total },
+          { label: "Active", value: counts.active },
+          { label: "Archived", value: counts.finished }
         ].map((item) => (
           <Card key={item.label} className="p-4 sm:p-5">
             <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)] sm:text-[10px]">
@@ -195,19 +195,19 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
       <div className="grid gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_auto]">
         <div>
           <label htmlFor="bean-search" className="sr-only">
-            Çekirdeklerde ara
+            Search coffees
           </label>
           <Input
             id="bean-search"
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Kavurucu, çekirdek, menşei veya işlem ara…"
+            placeholder="Search roaster, coffee, origin or process…"
           />
         </div>
         <div
           className="grid grid-cols-3 gap-1 rounded-xl bg-[var(--surface-2)] p-1"
-          aria-label="Paket durumu"
+          aria-label="Coffee status"
         >
           {statusFilters.map((filter) => (
             <button
@@ -229,14 +229,14 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
       </div>
 
       <div className="flex items-center justify-between text-xs text-[var(--ink-muted)]">
-        <p aria-live="polite">{filteredBeans.length} paket gösteriliyor</p>
+        <p aria-live="polite">{filteredBeans.length} coffees shown</p>
         {query && (
           <button
             type="button"
             className="font-bold text-[var(--accent-strong)] underline-offset-4 hover:underline"
             onClick={() => setQuery("")}
           >
-            Aramayı temizle
+            Clear search
           </button>
         )}
       </div>
@@ -254,10 +254,10 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
       {filteredBeans.length === 0 ? (
         <Card className="py-14 text-center">
           <p className="display-title text-2xl font-semibold">
-            Bu filtrede paket yok.
+            No coffees match this filter.
           </p>
           <p className="mt-2 text-sm text-[var(--ink-muted)]">
-            Aramayı temizle veya envantere yeni bir çekirdek ekle.
+            Clear the search or add a coffee to the library.
           </p>
         </Card>
       ) : (
@@ -288,7 +288,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                   <div className="grid grid-cols-3 gap-2 border-y border-[var(--border)] py-4">
                     <div>
                       <p className="text-[9px] uppercase tracking-wider text-[var(--ink-soft)]">
-                        Kavrum
+                        Roast age
                       </p>
                       <p className="mt-1 text-xs font-bold">
                         {formatDaysSince(bean.roastDate)}
@@ -296,7 +296,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                     </div>
                     <div>
                       <p className="text-[9px] uppercase tracking-wider text-[var(--ink-soft)]">
-                        Kayıt
+                        Brews
                       </p>
                       <p className="mt-1 text-xs font-bold tabular-nums">
                         {bean.brewCount}
@@ -319,7 +319,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                         href={`/brews/new?bean=${bean.id}`}
                         className={buttonStyles({ size: "sm" })}
                       >
-                        Bu çekirdeği demle
+                        Brew this coffee
                       </Link>
                     )}
                     <Button
@@ -331,7 +331,7 @@ export function BeansTable({ beans: initialBeans }: BeansTableProps) {
                         handleToggleStatus(bean.id, !bean.isFinished)
                       }
                     >
-                      {bean.isFinished ? "Aktif et" : "Arşivle"}
+                      {bean.isFinished ? "Reactivate" : "Archive"}
                     </Button>
                     <Button
                       type="button"

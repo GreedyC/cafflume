@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { brewLogSchema } from "@/lib/validations";
 import { formatRatio } from "@/lib/utils";
@@ -77,6 +78,22 @@ export function BrewForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const restore = window.setTimeout(() => {
+      const saved = window.localStorage.getItem("brewstack-brew-draft");
+      if (saved && !initialValues?.beanId) {
+        try { setFormData((current) => ({ ...current, ...(JSON.parse(saved) as BrewFormState) })); } catch { window.localStorage.removeItem("brewstack-brew-draft"); }
+      }
+      setHydrated(true);
+    }, 0);
+    return () => window.clearTimeout(restore);
+  }, [initialValues?.beanId]);
+
+  useEffect(() => {
+    if (hydrated) window.localStorage.setItem("brewstack-brew-draft", JSON.stringify(formData));
+  }, [formData, hydrated]);
 
   const updateField = (field: keyof BrewFormState, value: string) => {
     setFormData((current) => ({ ...current, [field]: value }));
@@ -123,7 +140,7 @@ export function BrewForm({
       }
       setErrors(fieldErrors);
       setStatus("error");
-      setMessage("İşaretli alanları kontrol et.");
+      setMessage("Check the highlighted fields.");
       const firstField = Object.keys(fieldErrors)[0];
       window.setTimeout(() => document.getElementById(firstField)?.focus(), 0);
       return;
@@ -143,15 +160,16 @@ export function BrewForm({
           router.replace("/login?next=%2Fbrews%2Fnew");
           return;
         }
-        setMessage(result?.error ?? "Demleme kaydedilemedi.");
+        setMessage(result?.error ?? "Brew could not be saved.");
         setStatus("error");
         return;
       }
       router.push("/brews");
+      window.localStorage.removeItem("brewstack-brew-draft");
       router.refresh();
     } catch {
       setStatus("error");
-      setMessage("Bağlantı kurulamadı. Lütfen yeniden dene.");
+      setMessage("Could not connect. Please try again.");
     }
   };
 
@@ -165,22 +183,22 @@ export function BrewForm({
       <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)] sm:p-7">
         <div className="border-b border-[var(--border)] pb-5">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--accent)]">
-            01 · Çekirdek ve yöntem
+            Coffee and method
           </p>
           <h2 className="display-title mt-2 text-2xl font-semibold">
-            Fincanın temeli
+            Brew setup
           </h2>
         </div>
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
           <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="beanId">Çekirdek</Label>
+            <Label htmlFor="beanId">Coffee</Label>
             <Select
               id="beanId"
               value={formData.beanId}
               onChange={(event) => updateField("beanId", event.target.value)}
               {...fieldProps("beanId")}
             >
-              <option value="">Aktif paket seç</option>
+              <option value="">Choose an active coffee</option>
               {beans.map((bean) => (
                 <option key={bean.id} value={bean.id}>
                   {bean.label}
@@ -190,15 +208,15 @@ export function BrewForm({
             <FieldError field="beanId" errors={errors} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="method">Yöntem / ekipman</Label>
+            <Label htmlFor="method">Method / brewer</Label>
             <Input
               id="method"
               value={formData.method}
               onChange={(event) => updateField("method", event.target.value)}
-              placeholder="Örn. V60"
+              placeholder="e.g. V60"
               {...fieldProps("method")}
             />
-            <div className="flex flex-wrap gap-1.5" aria-label="Yöntem önerileri">
+            <div className="flex flex-wrap gap-1.5" aria-label="Method suggestions">
               {methodPresets.map((method) => (
                 <button
                   key={method}
@@ -213,14 +231,14 @@ export function BrewForm({
             <FieldError field="method" errors={errors} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="grindSetting">Öğütüm ayarı</Label>
+            <Label htmlFor="grindSetting">Grind setting</Label>
             <Input
               id="grindSetting"
               value={formData.grindSetting}
               onChange={(event) =>
                 updateField("grindSetting", event.target.value)
               }
-              placeholder="Örn. 22 click"
+              placeholder="e.g. 22 clicks"
               {...fieldProps("grindSetting")}
             />
             <FieldError field="grindSetting" errors={errors} />
@@ -231,15 +249,15 @@ export function BrewForm({
       <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)] sm:p-7">
         <div className="border-b border-[var(--border)] pb-5">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--accent)]">
-            02 · Reçete
+            Recipe
           </p>
           <h2 className="display-title mt-2 text-2xl font-semibold">
-            Ölçülebilir değişkenler
+            Measured variables
           </h2>
         </div>
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="doseGrams">Kahve dozu (g)</Label>
+            <Label htmlFor="doseGrams">Coffee dose (g)</Label>
             <Input
               id="doseGrams"
               type="number"
@@ -254,7 +272,7 @@ export function BrewForm({
             <FieldError field="doseGrams" errors={errors} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="yieldMl">Su miktarı (ml)</Label>
+            <Label htmlFor="yieldMl">Water / yield (ml)</Label>
             <Input
               id="yieldMl"
               type="number"
@@ -269,7 +287,7 @@ export function BrewForm({
             <FieldError field="yieldMl" errors={errors} />
           </div>
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-semibold">Demleme oranı</span>
+            <span className="text-sm font-semibold">Brew ratio</span>
             <output
               id="ratio"
               aria-live="polite"
@@ -280,7 +298,7 @@ export function BrewForm({
             </output>
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="waterTempC">Su sıcaklığı (°C)</Label>
+            <Label htmlFor="waterTempC">Water temperature (°C)</Label>
             <Input
               id="waterTempC"
               type="number"
@@ -297,7 +315,7 @@ export function BrewForm({
             <FieldError field="waterTempC" errors={errors} />
           </div>
           <fieldset className="flex flex-col gap-2 lg:col-span-2">
-            <legend className="text-sm font-semibold">Demleme süresi</legend>
+            <legend className="text-sm font-semibold">Brew time</legend>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="brewTimeMin" className="sr-only">
@@ -313,7 +331,7 @@ export function BrewForm({
                   onChange={(event) =>
                     updateField("brewTimeMin", event.target.value)
                   }
-                  placeholder="Dakika"
+                  placeholder="Minutes"
                   {...fieldProps("brewTimeMin")}
                 />
               </div>
@@ -332,7 +350,7 @@ export function BrewForm({
                   onChange={(event) =>
                     updateField("brewTimeSec", event.target.value)
                   }
-                  placeholder="Saniye"
+                  placeholder="Seconds"
                   {...fieldProps("brewTimeSec")}
                 />
               </div>
@@ -348,15 +366,15 @@ export function BrewForm({
       <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)] sm:p-7">
         <div className="border-b border-[var(--border)] pb-5">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--accent)]">
-            03 · Fincandaki sonuç
+            Result
           </p>
           <h2 className="display-title mt-2 text-2xl font-semibold">
-            Tadım ve puan
+            Taste and personal score
           </h2>
         </div>
         <div className="mt-6 grid gap-5 sm:grid-cols-[180px_1fr]">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="rating">Puan (1–10)</Label>
+            <Label htmlFor="rating">Personal score (1–10)</Label>
             <Input
               id="rating"
               type="number"
@@ -371,16 +389,16 @@ export function BrewForm({
             />
             {sourceRating && (
               <p className="text-[11px] text-[var(--ink-muted)]">
-                Önceki sonuç: {sourceRating.toLocaleString("tr-TR")}/10
+                Previous result: {sourceRating.toLocaleString("en-US")}/10
               </p>
             )}
             <FieldError field="rating" errors={errors} />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="tastingNotes">
-              Tadım notları{" "}
+              Tasting notes{" "}
               <span className="font-normal text-[var(--ink-muted)]">
-                (opsiyonel)
+                (optional)
               </span>
             </Label>
             <Textarea
@@ -390,7 +408,7 @@ export function BrewForm({
               onChange={(event) =>
                 updateField("tastingNotes", event.target.value)
               }
-              placeholder="Aroma, asidite, tatlılık, gövde ve bitiş…"
+              placeholder="Aroma, acidity, sweetness, body and finish…"
               {...fieldProps("tastingNotes")}
             />
             <FieldError field="tastingNotes" errors={errors} />
@@ -405,14 +423,12 @@ export function BrewForm({
           className="text-xs text-[var(--ink-muted)]"
         >
           {status === "error"
-            ? message || "Kaydedilemedi."
+            ? message || "Could not save."
             : ratioLabel
-              ? `Hesaplanan oran ${ratioLabel}`
-              : "Doz ve suyu girince oran otomatik hesaplanır."}
+              ? `Calculated ratio ${ratioLabel} · draft saved automatically`
+              : "Enter dose and water to calculate the ratio. Draft saves automatically."}
         </p>
-        <Button type="submit" disabled={status === "loading"}>
-          {status === "loading" ? "Kaydediliyor…" : "Demlemeyi kaydet"}
-        </Button>
+        <div className="flex items-center gap-2"><Link href="/" className="text-action">Cancel</Link><Button type="submit" disabled={status === "loading"}>{status === "loading" ? "Saving…" : "Save brew"}</Button></div>
       </div>
     </form>
   );

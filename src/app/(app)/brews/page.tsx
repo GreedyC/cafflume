@@ -33,7 +33,7 @@ type Props = {
 };
 
 export default async function BrewsPage({ searchParams }: Props) {
-  await requirePageUser();
+  const user = await requirePageUser();
   const resolvedSearchParams = await searchParams;
   const parsedPage = pageSchema.safeParse(
     firstSearchParam(resolvedSearchParams.page) ?? 1
@@ -46,6 +46,7 @@ export default async function BrewsPage({ searchParams }: Props) {
     ? Number(rawMinRating)
     : 0;
   const where = {
+    userId: user.id,
     ...(selectedMethod ? { method: selectedMethod } : {}),
     ...(minRating ? { rating: { gte: minRating } } : {})
   };
@@ -54,9 +55,11 @@ export default async function BrewsPage({ searchParams }: Props) {
     prisma.brewLog.count({ where }),
     prisma.brewLog.groupBy({
       by: ["method"],
+      where: { userId: user.id },
       orderBy: { method: "asc" }
     }),
     prisma.brewLog.aggregate({
+      where: { userId: user.id },
       _avg: { rating: true },
       _max: { rating: true },
       _count: true
@@ -82,35 +85,34 @@ export default async function BrewsPage({ searchParams }: Props) {
       <header className="journal-rule flex flex-col gap-4 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
-            Brew log · recipe archive
+            Recipe archive
           </p>
           <h1 className="display-title mt-2 text-4xl font-semibold sm:text-5xl">
-            Demleme günlüğü
+            Brew log
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--ink-muted)]">
-            Reçeteleri yan yana oku, iyi sonuçlara geri dön ve değişikliklerin
-            etkisini gör.
+            Revisit proven recipes and see how each controlled change affected the cup.
           </p>
         </div>
         <Link href="/brews/new" className={buttonStyles()}>
-          Yeni demleme kaydet
+          Record brew
         </Link>
       </header>
 
       <section
-        aria-label="Demleme özeti"
+        aria-label="Brew summary"
         className="grid grid-cols-3 gap-2 sm:gap-4"
       >
         {[
-          { label: "Toplam kayıt", value: overall._count.toString() },
+          { label: "Total records", value: overall._count.toString() },
           {
-            label: "Ortalama",
+            label: "Average",
             value: overall._avg.rating
               ? formatNumber(overall._avg.rating, 1)
               : "—"
           },
           {
-            label: "En yüksek",
+            label: "Highest",
             value: overall._max.rating
               ? formatNumber(overall._max.rating, 1)
               : "—"
@@ -136,7 +138,7 @@ export default async function BrewsPage({ searchParams }: Props) {
             htmlFor="method-filter"
             className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]"
           >
-            Yöntem
+            Method
           </label>
           <select
             id="method-filter"
@@ -144,7 +146,7 @@ export default async function BrewsPage({ searchParams }: Props) {
             defaultValue={selectedMethod}
             className="min-h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)]"
           >
-            <option value="">Tüm yöntemler</option>
+            <option value="">All methods</option>
             {methodRows.map(({ method }) => (
               <option key={method} value={method}>
                 {method}
@@ -157,7 +159,7 @@ export default async function BrewsPage({ searchParams }: Props) {
             htmlFor="rating-filter"
             className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]"
           >
-            Minimum puan
+            Minimum score
           </label>
           <select
             id="rating-filter"
@@ -165,10 +167,10 @@ export default async function BrewsPage({ searchParams }: Props) {
             defaultValue={minRating || ""}
             className="min-h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)]"
           >
-            <option value="">Tüm puanlar</option>
-            <option value="7">7 ve üzeri</option>
-            <option value="8">8 ve üzeri</option>
-            <option value="9">9 ve üzeri</option>
+            <option value="">All scores</option>
+            <option value="7">7 and above</option>
+            <option value="8">8 and above</option>
+            <option value="9">9 and above</option>
           </select>
         </div>
         <button
@@ -178,7 +180,7 @@ export default async function BrewsPage({ searchParams }: Props) {
             className: "self-end"
           })}
         >
-          Uygula
+          Apply
         </button>
         {(selectedMethod || minRating > 0) && (
           <Link
@@ -188,22 +190,22 @@ export default async function BrewsPage({ searchParams }: Props) {
               className: "self-end"
             })}
           >
-            Temizle
+            Clear
           </Link>
         )}
       </form>
 
       <p className="text-xs text-[var(--ink-muted)]">
-        {total} kayıt · {page}/{totalPages}. sayfa
+        {total} records · page {page}/{totalPages}
       </p>
 
       {brews.length === 0 ? (
         <Card className="py-14 text-center">
           <p className="display-title text-2xl font-semibold">
-            Bu filtrede kayıt yok.
+            No records match these filters.
           </p>
           <p className="mt-2 text-sm text-[var(--ink-muted)]">
-            Filtreleri temizle veya yeni bir demleme ekle.
+            Clear the filters or add a new brew.
           </p>
         </Card>
       ) : (

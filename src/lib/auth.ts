@@ -194,6 +194,13 @@ export async function requireAuthentication(request: Request) {
   return (await getAuthenticatedUser(request)) ? null : unauthorizedResponse();
 }
 
+export async function requireApiUser(request: Request) {
+  const user = await getAuthenticatedUser(request);
+  return user
+    ? { user, response: null }
+    : { user: null, response: unauthorizedResponse() };
+}
+
 export async function requireAdmin(request: Request) {
   const user = await getAuthenticatedUser(request);
   if (!user) {

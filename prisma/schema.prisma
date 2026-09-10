@@ -26,6 +26,9 @@ model User {
   lastLoginAt     DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  beans           Bean[]
+  brewLogs        BrewLog[]
+  cuppings        CuppingSession[]
 
   @@index([isActive, createdAt(sort: Desc)])
   @@index([role, isActive])
@@ -33,6 +36,7 @@ model User {
 
 model Bean {
   id         String    @id @default(uuid())
+  userId     String
   roaster    String
   name       String
   origin     String
@@ -44,12 +48,39 @@ model Bean {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   brewLogs   BrewLog[]
+  cuppings   CuppingSession[]
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([isFinished, roastDate(sort: Desc)])
+  @@index([userId, isFinished, roastDate(sort: Desc)])
+}
+
+model CuppingSession {
+  id              String   @id @default(uuid())
+  userId          String
+  beanId          String
+  fragranceAroma  Float
+  flavor          Float
+  aftertaste      Float
+  acidity         Float
+  sweetness       Float
+  body            Float
+  balance         Float
+  overall         Float
+  totalScore      Float
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  bean Bean @relation(fields: [beanId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, beanId, createdAt(sort: Desc)])
+  @@index([totalScore(sort: Desc), createdAt(sort: Desc)])
 }
 
 model BrewLog {
   id           String   @id @default(uuid())
+  userId       String
   beanId       String
   method       String
   doseGrams    Float
@@ -63,8 +94,9 @@ model BrewLog {
   createdAt    DateTime @default(now())
 
   bean Bean @relation(fields: [beanId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([createdAt(sort: Desc)])
-  @@index([beanId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, beanId, createdAt(sort: Desc)])
   @@index([rating(sort: Desc), createdAt(sort: Desc)])
 }

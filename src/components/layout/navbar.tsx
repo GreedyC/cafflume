@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   Bean,
   Coffee,
+  ClipboardCheck,
   Gamepad2,
   LayoutDashboard,
   LogOut,
@@ -16,34 +17,46 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { AuthenticatedUser } from "@/lib/auth";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
-
-const primaryLinks = [
-  {
-    href: "/",
-    label: "Genel Bakış",
-    shortLabel: "Özet",
-    icon: LayoutDashboard
-  },
-  { href: "/beans", label: "Çekirdekler", shortLabel: "Çekirdek", icon: Bean },
-  { href: "/brews", label: "Demlemeler", shortLabel: "Kayıtlar", icon: Coffee },
-  { href: "/play", label: "Bean Merge", shortLabel: "Oyun", icon: Gamepad2 }
-];
+import { localeNames, locales, translator, type Locale } from "@/lib/i18n";
 
 function isCurrent(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function Navbar({ user }: { user: AuthenticatedUser }) {
+export function Navbar({ user, locale }: { user: AuthenticatedUser; locale: Locale }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = translator(locale);
   const [logoutPending, setLogoutPending] = useState(false);
+  const [localePending, setLocalePending] = useState(false);
+  const primaryLinks = [
+    { href: "/", label: t("overview"), shortLabel: t("overview"), icon: LayoutDashboard },
+    { href: "/beans", label: t("beans"), shortLabel: t("beans"), icon: Bean },
+    { href: "/brews", label: t("brews"), shortLabel: t("brews"), icon: Coffee },
+    { href: "/cuppings", label: t("cupping"), shortLabel: t("cupping"), icon: ClipboardCheck },
+    { href: "/play", label: t("play"), shortLabel: t("play"), icon: Gamepad2 }
+  ];
   const accountLinks = [
     ...(user.role === "ADMIN"
-      ? [{ href: "/users", label: "Ekip", shortLabel: "Ekip", icon: Users }]
+      ? [{ href: "/users", label: t("team"), shortLabel: t("team"), icon: Users }]
       : []),
-    { href: "/settings", label: "Ayarlar", shortLabel: "Ayarlar", icon: Settings }
+    { href: "/settings", label: t("settings"), shortLabel: t("settings"), icon: Settings }
   ];
+
+  const changeLocale = async (nextLocale: Locale) => {
+    setLocalePending(true);
+    try {
+      await fetch("/api/locale", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locale: nextLocale })
+      });
+      router.refresh();
+    } finally {
+      setLocalePending(false);
+    }
+  };
 
   const handleLogout = async () => {
     setLogoutPending(true);
@@ -101,32 +114,25 @@ export function Navbar({ user }: { user: AuthenticatedUser }) {
             >
               <Bean size={21} strokeWidth={2.4} />
             </span>
-            <span>
-              <span className="display-title block text-xl font-semibold">
-                BrewStack
-              </span>
-              <span className="block text-[9px] font-bold uppercase tracking-[0.19em] text-[var(--ink-muted)]">
-                Roast intelligence
-              </span>
-            </span>
+            <span><span className="brand-name block">BrewStack</span><span className="brand-caption block">Measure · brew · learn</span></span>
           </Link>
           <ThemeToggle />
         </div>
 
         <div className="mt-9">
           <p className="px-3 text-[9px] font-extrabold uppercase tracking-[0.2em] text-[var(--ink-soft)]">
-            Laboratuvar
+            Workspace
           </p>
-          <nav aria-label="Ana menü" className="mt-2 flex flex-col gap-1">
+          <nav aria-label="Primary navigation" className="mt-2 flex flex-col gap-1">
             {primaryLinks.map(renderLink)}
           </nav>
         </div>
 
         <div className="mt-7">
           <p className="px-3 text-[9px] font-extrabold uppercase tracking-[0.2em] text-[var(--ink-soft)]">
-            Çalışma alanı
+            Account
           </p>
-          <nav aria-label="Hesap menüsü" className="mt-2 flex flex-col gap-1">
+          <nav aria-label="Account navigation" className="mt-2 flex flex-col gap-1">
             {accountLinks.map(renderLink)}
           </nav>
         </div>
@@ -136,7 +142,7 @@ export function Navbar({ user }: { user: AuthenticatedUser }) {
           className="accent-sheen mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-white shadow-[var(--shadow-md)] outline-none transition hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
           <Sparkles aria-hidden="true" size={16} />
-          Yeni demleme
+          {t("newBrew")}
         </Link>
 
         <div className="mt-auto rounded-[1.35rem] border border-[var(--border)] bg-[var(--surface-elevated)] p-3.5 shadow-[var(--shadow-sm)]">
@@ -147,15 +153,15 @@ export function Navbar({ user }: { user: AuthenticatedUser }) {
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold">{user.name}</p>
               <p className="truncate text-[10px] text-[var(--ink-muted)]">
-                {user.role === "ADMIN" ? "Yönetici" : "Üye"} · {user.email}
+                {user.role === "ADMIN" ? "Admin" : "Member"} · {user.email}
               </p>
             </div>
             <button
               type="button"
               onClick={handleLogout}
               disabled={logoutPending}
-              aria-label="Güvenli çıkış yap"
-              title="Çıkış"
+              aria-label={t("logout")}
+              title={t("logout")}
               className="grid h-9 w-9 place-items-center rounded-xl text-[var(--ink-muted)] outline-none transition hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] focus-visible:ring-2 focus-visible:ring-[var(--ring)] disabled:cursor-wait disabled:opacity-60"
             >
               <LogOut aria-hidden="true" size={16} />
@@ -172,7 +178,7 @@ export function Navbar({ user }: { user: AuthenticatedUser }) {
           >
             <Bean size={18} />
           </span>
-          <span className="display-title text-xl font-semibold">BrewStack</span>
+          <span className="brand-name text-xl">BrewStack</span>
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -180,16 +186,16 @@ export function Navbar({ user }: { user: AuthenticatedUser }) {
             href="/brews/new"
             className="accent-sheen inline-flex min-h-10 items-center rounded-xl px-3.5 text-xs font-bold text-white outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           >
-            + Demle
+            + {t("newBrew")}
           </Link>
         </div>
       </header>
 
       <nav
-        aria-label="Mobil ana menü"
-        className="mobile-dock fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-[1.35rem] border border-[var(--dock-border)] p-1.5 shadow-2xl backdrop-blur-xl lg:hidden"
+        aria-label="Mobile navigation"
+        className="mobile-dock fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-xl border border-[var(--dock-border)] p-1.5 shadow-2xl lg:hidden"
       >
-        {[...primaryLinks, accountLinks.at(-1)!].map((link) => {
+        {[...primaryLinks.filter((link) => link.href !== "/play"), accountLinks.at(-1)!].map((link) => {
           const active = isCurrent(pathname, link.href);
           const Icon = link.icon;
           return (
@@ -210,6 +216,13 @@ export function Navbar({ user }: { user: AuthenticatedUser }) {
           );
         })}
       </nav>
+
+      <label className="language-switcher" title={t("language")}>
+        <span className="sr-only">{t("language")}</span>
+        <select value={locale} disabled={localePending} onChange={(event) => changeLocale(event.target.value as Locale)}>
+          {locales.map((item) => <option key={item} value={item}>{item.toUpperCase()} · {localeNames[item]}</option>)}
+        </select>
+      </label>
     </>
   );
 }

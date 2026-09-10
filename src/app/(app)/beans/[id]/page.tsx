@@ -20,14 +20,15 @@ type Props = {
 };
 
 export default async function BeanDetailPage({ params }: Props) {
-  await requirePageUser();
+  const user = await requirePageUser();
   const { id } = await params;
-  const bean = await prisma.bean.findUnique({
-    where: { id },
+  const bean = await prisma.bean.findFirst({
+    where: { id, userId: user.id },
     include: {
       brewLogs: {
         orderBy: { createdAt: "desc" }
-      }
+      },
+      cuppings: { orderBy: { createdAt: "desc" }, take: 3 }
     }
   });
 
@@ -82,18 +83,7 @@ export default async function BeanDetailPage({ params }: Props) {
               {bean.variety ? ` · ${bean.variety}` : ""}
             </p>
           </div>
-          {!bean.isFinished && (
-            <Link
-              href={
-                bestBrew
-                  ? `/brews/new?from=${bestBrew.id}`
-                  : `/brews/new?bean=${bean.id}`
-              }
-              className={buttonStyles()}
-            >
-              {bestBrew ? "En iyi tarifi tekrar demle" : "İlk demlemeyi kaydet"}
-            </Link>
-          )}
+          {!bean.isFinished && <div className="flex flex-wrap gap-2"><Link href={`/cuppings/new?bean=${bean.id}`} className={buttonStyles({ variant: "secondary" })}>New cupping</Link><Link href={bestBrew ? `/brews/new?from=${bestBrew.id}` : `/brews/new?bean=${bean.id}`} className={buttonStyles()}>{bestBrew ? "Repeat best brew" : "Record first brew"}</Link></div>}
         </div>
       </header>
 

@@ -29,7 +29,7 @@ export function LoginForm() {
 
       if (!response.ok) {
         setStatus("error");
-        setMessage(result.error ?? "Giriş başarısız.");
+        setMessage(result.error ?? "Sign-in failed.");
         return;
       }
 
@@ -40,7 +40,7 @@ export function LoginForm() {
       router.refresh();
     } catch {
       setStatus("error");
-      setMessage("Bağlantı kurulamadı. Lütfen tekrar dene.");
+      setMessage("Could not connect. Please try again.");
     }
   };
 
@@ -51,7 +51,7 @@ export function LoginForm() {
           htmlFor="email"
           className="text-sm font-semibold text-[var(--ink)]"
         >
-          E-posta
+          Email
         </label>
         <input
           id="email"
@@ -72,7 +72,7 @@ export function LoginForm() {
           htmlFor="password"
           className="text-sm font-semibold text-[var(--ink)]"
         >
-          Parola
+          Password
         </label>
         <input
           id="password"
@@ -100,7 +100,7 @@ export function LoginForm() {
         disabled={status === "loading"}
         className="inline-flex h-12 items-center justify-center rounded-xl bg-[var(--accent)] px-5 text-sm font-bold text-white shadow-[var(--shadow-sm)] outline-none transition hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
       >
-        {status === "loading" ? "Kontrol ediliyor…" : "Giriş yap"}
+        {status === "loading" ? "Checking…" : "Sign in"}
       </button>
     </form>
   );

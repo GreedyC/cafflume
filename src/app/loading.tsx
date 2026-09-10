@@ -14,10 +14,10 @@ export default function Loading() {
         </span>
         <div className="text-center">
           <p className="display-title text-2xl font-semibold">
-            Günlük açılıyor
+            Opening workspace
           </p>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
-            Kayıtlar hazırlanıyor…
+            Preparing your records…
           </p>
         </div>
       </div>

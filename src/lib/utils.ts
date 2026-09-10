@@ -9,7 +9,7 @@ export function formatDate(value?: Date | string | null) {
   if (!value) return "—";
   const date = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("tr-TR", {
+  return new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric"
@@ -20,7 +20,7 @@ export function formatDateTime(value?: Date | string | null) {
   if (!value) return "—";
   const date = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("tr-TR", {
+  return new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -32,7 +32,7 @@ export function formatDateTime(value?: Date | string | null) {
 
 export function formatNumber(value: number, decimals = 0) {
   if (!Number.isFinite(value)) return "—";
-  return new Intl.NumberFormat("tr-TR", {
+  return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
   }).format(value);
@@ -53,8 +53,8 @@ export function formatDaysSince(value?: Date | string | null) {
   const diff = Date.now() - date.getTime();
   if (diff < 0) return "—";
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  if (days === 0) return "0 gün";
-  return `${days} gün`;
+  if (days === 0) return "0 days";
+  return `${days} days`;
 }
 
 export function formatDuration(totalSeconds: number) {
@@ -69,5 +69,5 @@ export function formatDurationParts(minutes: number, seconds: number) {
   if (minutes < 0 || seconds < 0) return "—";
   const safeMinutes = Math.floor(minutes);
   const safeSeconds = Math.min(59, Math.floor(seconds));
-  return `${safeMinutes} dk ${safeSeconds.toString().padStart(2, "0")} sn`;
+  return `${safeMinutes} min ${safeSeconds.toString().padStart(2, "0")} sec`;
 }

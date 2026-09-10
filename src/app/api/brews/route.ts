@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { brewLogSchema, pageSchema } from "@/lib/validations";
 import {
   rejectUntrustedOrigin,
-  requireAuthentication
+  requireApiUser
 } from "@/lib/auth";
 import {
   ApiRequestError,
@@ -14,10 +14,8 @@ import {
 const PAGE_SIZE = 10;
 
 export async function GET(request: Request) {
-  const authError = await requireAuthentication(request);
-  if (authError) {
-    return authError;
-  }
+  const { user, response } = await requireApiUser(request);
+  if (response) return response;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -30,12 +28,13 @@ export async function GET(request: Request) {
 
     const [brews, total] = await Promise.all([
       prisma.brewLog.findMany({
+        where: { userId: user.id },
         orderBy: { createdAt: "desc" },
         include: { bean: true },
         skip,
         take: PAGE_SIZE
       }),
-      prisma.brewLog.count()
+      prisma.brewLog.count({ where: { userId: user.id } })
     ]);
 
     const response = NextResponse.json({
@@ -52,10 +51,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const authError = await requireAuthentication(request);
-  if (authError) {
-    return authError;
-  }
+  const { user, response } = await requireApiUser(request);
+  if (response) return response;
   const originError = rejectUntrustedOrigin(request);
   if (originError) {
     return originError;
@@ -78,7 +75,7 @@ export async function POST(request: Request) {
 
     const brew = await prisma.$transaction(async (transaction) => {
       const bean = await transaction.bean.findFirst({
-        where: { id: parsed.data.beanId, isFinished: false },
+        where: { id: parsed.data.beanId, userId: user.id, isFinished: false },
         select: { id: true }
       });
       if (!bean) {
@@ -89,7 +86,7 @@ export async function POST(request: Request) {
       }
 
       return transaction.brewLog.create({
-        data: parsed.data
+        data: { ...parsed.data, userId: user.id }
       });
     });
 

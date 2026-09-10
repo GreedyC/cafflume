@@ -11,12 +11,12 @@ export default async function SettingsPage() {
   return (
     <div className="flex flex-col gap-7">
       <header className="journal-rule pb-6">
-        <p className="panel-kicker">Hesap merkezi</p>
+        <p className="panel-kicker">Account center</p>
         <h1 className="display-title mt-2 text-4xl font-semibold sm:text-5xl">
-          Ayarlar
+          Settings
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">
-          Hesabını, görünümünü ve çalışma alanı güvenliğini tek yerden yönet.
+          Manage your account, appearance and workspace security.
         </p>
       </header>
 
@@ -27,9 +27,9 @@ export default async function SettingsPage() {
               <KeyRound size={19} />
             </span>
             <div>
-              <p className="panel-kicker">Güvenlik</p>
+              <p className="panel-kicker">Security</p>
               <h2 className="display-title text-2xl font-semibold">
-                Parola değiştir
+                Change password
               </h2>
             </div>
           </div>
@@ -38,7 +38,7 @@ export default async function SettingsPage() {
 
         <div className="space-y-4">
           <Card>
-            <p className="panel-kicker">Aktif hesap</p>
+            <p className="panel-kicker">Active account</p>
             <div className="mt-4 flex items-center gap-3">
               <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[var(--surface-inverse)] font-extrabold text-[var(--inverse-ink)]">
                 {user.name.slice(0, 1).toLocaleUpperCase("tr-TR")}
@@ -52,7 +52,7 @@ export default async function SettingsPage() {
             </div>
             <div className="mt-5 flex items-center gap-2 rounded-xl bg-[var(--surface-2)] px-3 py-2.5 text-xs text-[var(--ink-muted)]">
               <Shield size={15} className="text-[var(--moss)]" />
-              {user.role === "ADMIN" ? "Yönetici hesabı" : "Çalışma alanı üyesi"}
+              {user.role === "ADMIN" ? "Administrator account" : "Workspace member"}
             </div>
           </Card>
 
@@ -60,9 +60,9 @@ export default async function SettingsPage() {
             <div className="flex items-center gap-3">
               <Moon size={18} className="text-[var(--accent)]" />
               <div>
-                <p className="font-bold">Koyu görünüm</p>
+                <p className="font-bold">Dark appearance</p>
                 <p className="mt-1 text-xs leading-5 text-[var(--ink-muted)]">
-                  Sol menüdeki tema düğmesi tercihini bu cihazda saklar.
+                  The theme control stores your preference on this device.
                 </p>
               </div>
             </div>
@@ -72,16 +72,16 @@ export default async function SettingsPage() {
             <Card tone="muted">
               <Users size={19} className="text-[var(--accent)]" />
               <h2 className="display-title mt-3 text-xl font-semibold">
-                Ekip yönetimi
+                Team management
               </h2>
               <p className="mt-2 text-xs leading-5 text-[var(--ink-muted)]">
-                Yeni kullanıcı davet et, rolleri düzenle ve erişimleri kapat.
+                Invite users, update roles and revoke access.
               </p>
               <Link
                 href="/users"
                 className={buttonStyles({ variant: "secondary", className: "mt-5" })}
               >
-                Kullanıcıları aç
+                Open users
               </Link>
             </Card>
           )}

@@ -18,10 +18,10 @@ type Props = {
 };
 
 export default async function BrewDetailPage({ params }: Props) {
-  await requirePageUser();
+  const user = await requirePageUser();
   const { id } = await params;
-  const brew = await prisma.brewLog.findUnique({
-    where: { id },
+  const brew = await prisma.brewLog.findFirst({
+    where: { id, userId: user.id },
     include: { bean: true }
   });
 

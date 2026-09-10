@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { beanStatusSchema, idSchema } from "@/lib/validations";
 import {
   rejectUntrustedOrigin,
-  requireAuthentication
+  requireApiUser
 } from "@/lib/auth";
 import {
   ApiRequestError,
@@ -16,10 +16,8 @@ type Params = {
 };
 
 export async function PATCH(request: Request, { params }: Params) {
-  const authError = await requireAuthentication(request);
-  if (authError) {
-    return authError;
-  }
+  const { user, response } = await requireApiUser(request);
+  if (response) return response;
   const originError = rejectUntrustedOrigin(request);
   if (originError) {
     return originError;
@@ -40,7 +38,7 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     const updated = await prisma.bean.update({
-      where: { id: id.data },
+      where: { id: id.data, userId: user.id },
       data: { isFinished: body.data.isFinished }
     });
     return NextResponse.json(updated);
@@ -50,10 +48,8 @@ export async function PATCH(request: Request, { params }: Params) {
 }
 
 export async function DELETE(request: Request, { params }: Params) {
-  const authError = await requireAuthentication(request);
-  if (authError) {
-    return authError;
-  }
+  const { user, response } = await requireApiUser(request);
+  if (response) return response;
   const originError = rejectUntrustedOrigin(request);
   if (originError) {
     return originError;
@@ -65,7 +61,7 @@ export async function DELETE(request: Request, { params }: Params) {
       throw new ApiRequestError(400, "Geçersiz kayıt kimliği.");
     }
 
-    await prisma.bean.delete({ where: { id: id.data } });
+    await prisma.bean.delete({ where: { id: id.data, userId: user.id } });
     return NextResponse.json({ ok: true });
   } catch (error) {
     return apiErrorResponse(error, "beans.delete");

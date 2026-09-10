@@ -11,9 +11,12 @@ async function main() {
 
   await prisma.brewLog.deleteMany();
   await prisma.bean.deleteMany();
+  const owner = await prisma.user.findFirst({ orderBy: { createdAt: "asc" } });
+  if (!owner) throw new Error("Seed için önce bir kullanıcı oluşturulmalı.");
 
   const bean1 = await prisma.bean.create({
     data: {
+      userId: owner.id,
       roaster: "Null Coffee",
       name: "Colombia Finca El Paraiso",
       origin: "Colombia",
@@ -26,6 +29,7 @@ async function main() {
 
   const bean2 = await prisma.bean.create({
     data: {
+      userId: owner.id,
       roaster: "Wayta Coffee",
       name: "Peru Cajamarca",
       origin: "Peru",
@@ -38,6 +42,7 @@ async function main() {
 
   await prisma.brewLog.create({
     data: {
+      userId: owner.id,
       beanId: bean1.id,
       method: "Hario MUGEN",
       doseGrams: 16.0,
@@ -53,6 +58,7 @@ async function main() {
 
   await prisma.brewLog.create({
     data: {
+      userId: owner.id,
       beanId: bean2.id,
       method: "Hario Switch",
       doseGrams: 15.0,

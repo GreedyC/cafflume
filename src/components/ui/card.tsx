@@ -12,9 +12,9 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-[1.35rem] border p-5 shadow-[var(--shadow-sm)] sm:p-6",
+        "rounded-xl border p-5 sm:p-6",
         tone === "default" &&
-          "border-[var(--border)] bg-[var(--surface-glass)] backdrop-blur-sm",
+          "border-[var(--border)] bg-[var(--surface-elevated)]",
         tone === "dark" &&
           "border-transparent bg-[var(--surface-inverse)] text-[var(--inverse-ink)] shadow-[var(--shadow-md)]",
         tone === "muted" &&

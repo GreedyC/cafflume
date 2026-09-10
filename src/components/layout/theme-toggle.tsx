@@ -15,8 +15,8 @@ export function ThemeToggle({ className }: { className?: string }) {
     <button
       type="button"
       onClick={toggleTheme}
-      aria-label="Açık ve koyu tema arasında geçiş yap"
-      title="Temayı değiştir"
+      aria-label="Toggle light and dark theme"
+      title="Change theme"
       className={cn(
         "theme-toggle grid h-10 w-10 place-items-center rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--ink-muted)] outline-none transition hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
         className

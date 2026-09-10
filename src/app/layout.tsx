@@ -1,24 +1,25 @@
 import type { Metadata } from "next";
-import { Fraunces, Manrope } from "next/font/google";
+import { Noto_Sans, JetBrains_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { getLocale } from "@/lib/i18n-server";
 
-const displayFont = Fraunces({
+const bodyFont = Noto_Sans({
   subsets: ["latin"],
-  variable: "--font-display",
+  variable: "--font-sans",
+  weight: ["400", "500", "600", "700", "800"]
+});
+
+const monoFont = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
   weight: ["400", "600", "700"]
 });
 
-const bodyFont = Manrope({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  weight: ["400", "500", "600", "700"]
-});
-
 const description =
-  "Çekirdeklerini, tariflerini ve her fincanın gelişimini tek bir demleme günlüğünde takip et.";
+  "Track coffees, repeatable recipes, live brews and structured cupping sessions in one precision coffee workspace.";
 
 function safeHost(value: string | null) {
   const host = value?.split(",", 1)[0]?.trim();
@@ -55,9 +56,9 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     openGraph: {
       type: "website",
-      locale: "tr_TR",
+      locale: "en_US",
       siteName: "BrewStack",
-      title: "BrewStack · Her fincan, daha iyi bir reçete.",
+      title: "BrewStack · Measure. Brew. Learn.",
       description,
       images: [
         {
@@ -70,23 +71,24 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: "BrewStack · Her fincan, daha iyi bir reçete.",
+      title: "BrewStack · Measure. Brew. Learn.",
       description,
       images: [socialImage]
     }
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
   return (
     <html
-      lang="tr"
+      lang={locale}
       suppressHydrationWarning
-      className={`${displayFont.variable} ${bodyFont.variable}`}
+      className={`${bodyFont.variable} ${monoFont.variable}`}
     >
       <head>
         <script
@@ -100,7 +102,7 @@ export default function RootLayout({
         {children}
         <Analytics />
         <SpeedInsights />
-      </body>
+</body>
     </html>
   );
 }

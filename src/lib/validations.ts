@@ -137,3 +137,20 @@ export const brewLogSchema = z
     message: "Demleme süresi zorunlu",
     path: ["brewTimeMin"]
   });
+
+const cuppingScore = z.number().finite().min(0).max(10);
+
+export const cuppingSessionSchema = z
+  .object({
+    beanId: idSchema,
+    fragranceAroma: cuppingScore,
+    flavor: cuppingScore,
+    aftertaste: cuppingScore,
+    acidity: cuppingScore,
+    sweetness: cuppingScore,
+    body: cuppingScore,
+    balance: cuppingScore,
+    overall: cuppingScore,
+    notes: z.string().trim().max(2_000, "Notes are too long").optional()
+  })
+  .strict();
